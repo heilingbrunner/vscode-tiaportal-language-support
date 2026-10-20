@@ -1,9 +1,10 @@
 # Change Log
 
-All notable changes to the "vscode-tiaportal-syntaxes" extension will be documented in this file.
+## [0.0.2]
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+- Updated extension to version 0.0.2
+- repo url fixed
 
-## [Unreleased]
+## [0.0.1]
 
 - Initial release
