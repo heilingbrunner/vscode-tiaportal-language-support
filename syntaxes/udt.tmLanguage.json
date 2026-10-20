@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "TIA.udt",
+  "scopeName": "source.tia.udt",
+  "fileTypes": ["udt"],
+  "patterns": [
+    { "include": "source.tia.scl" }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "TIA.awl",
+  "scopeName": "source.tia.awl",
+  "fileTypes": ["awl", "stl"],
+  "patterns": [
+    { "include": "#body" },
+    { "include": "source.tia.scl" }
+  ],
+  "repository": {
+    "body": {
+      "begin": "(?i)^\\s*(BEGIN)\\b",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.section.tia" }
+      },
+      "end": "(?i)^\\s*(END_(?:FUNCTION_BLOCK|FUNCTION|ORGANIZATION_BLOCK))\\b",
+      "endCaptures": {
+        "1": { "name": "keyword.other.block.tia" }
+      },
+      "patterns": [
+        { "include": "source.tia.scl#comments" },
+        { "include": "source.tia.scl#pragma" },
+        { "include": "#network" },
+        { "include": "source.tia.scl#legacy-header" },
+        { "include": "#label" },
+        { "include": "#jump" },
+        { "include": "#call" },
+        { "include": "#flow" },
+        { "include": "#compare" },
+        { "include": "#arithmetic" },
+        { "include": "#logic" },
+        { "include": "#load-transfer" },
+        { "include": "#pointer" },
+        { "include": "#constants" },
+        { "include": "#absolute-operands" },
+        { "include": "#registers" },
+        { "include": "source.tia.scl#literals" },
+        { "include": "source.tia.scl#variable-refs" },
+        { "include": "#parameters" },
+        { "include": "#assignment" },
+        { "include": "source.tia.scl#punctuation" }
+      ]
+    },
+    "network": {
+      "match": "(?i)^\\s*(NETWORK)\\b",
+      "captures": {
+        "1": { "name": "keyword.control.network.tia" }
+      }
+    },
+    "label": {
+      "match": "^\\s*([A-Za-z_]\\w*)\\s*(:)(?!=)",
+      "captures": {
+        "1": { "name": "entity.name.label.tia" },
+        "2": { "name": "punctuation.separator.tia" }
+      }
+    },
+    "jump": {
+      "match": "(?i)(?:^|(?<=[:;]))\\s*(JU|JL|JCN|JCB|JC|JNBI|JNB|JBI|JOS|JO|JZ|JN|JPZ|JP|JMZ|JM|JUO|LOOP|SPA|SPL|SPBNB|SPBN|SPBB|SPBIN|SPBI|SPB|SPO|SPS|SPZ|SPN|SPPZ|SPP|SPMZ|SPM|SPU)\\s+([A-Za-z_]\\w*)",
+      "captures": {
+        "1": { "name": "keyword.control.jump.tia" },
+        "2": { "name": "entity.name.label.tia" }
+      }
+    },
+    "call": {
+      "match": "(?i)(?:^|(?<=[:;]))\\s*(CALL|UC|CC)(?![\\w#])(?:\\s*(\"[^\"]*\"|(?:SFC|SFB|FC|FB)\\s*\\d+|#?[A-Za-z_]\\w*))?",
+      "captures": {
+        "1": { "name": "keyword.control.call.tia" },
+        "2": { "name": "entity.name.function.call.tia" }
+      }
+    },
+    "flow": {
+      "match": "(?i)(?:^|(?<=[:;]))\\s*(\\)\\s*MCR|MCR\\s*\\((?![*/])|(?:JU|JL|JCN|JCB|JC|JNBI|JNB|JBI|JOS|JO|JZ|JN|JPZ|JP|JMZ|JM|JUO|LOOP|SPA|SPL|SPBNB|SPBN|SPBB|SPBIN|SPBI|SPB|SPO|SPS|SPZ|SPN|SPPZ|SPP|SPMZ|SPM|SPU|BEC|BEU|BEB|BEA|BE|OPN|AUF|CDB|TDB|NOP|BLD|MCRA|MCRD|STP)(?![\\w#]))",
+      "captures": {
+        "1": { "name": "keyword.control.flow.tia" }
+      }
+    },
+    "compare": {
+      "match": "(?i)(?:^|(?<=[:;]))\\s*((?:==|<>|>=|<=|>|<)[IDR])(?![\\w#])",
+      "captures": {
+        "1": { "name": "keyword.operator.comparison.tia" }
+      }
+    },
+    "arithmetic": {
+      "match": "(?i)(?:^|(?<=[:;]))\\s*(\\+AR[12]|[+\\-*/][IDR](?![\\w#])|\\+|(?:MOD|SQRT|SQR|EXP|LN|SIN|COS|TAN|ASIN|ACOS|ATAN|ABS|NEGI|NEGD|NEGR|INC|DEC)(?![\\w#]))",
+      "captures": {
+        "1": { "name": "keyword.operator.arithmetic.tia" }
+      }
+    },
+    "logic": {
+      "match": "(?i)(?:^|(?<=[:;]))\\s*((?:AN|A|ON|O|XN|X|UN|U)\\s*\\((?![*/])|\\)|=(?![=>])|(?:AN|A|ON|O|XN|X|UN|U|NOT|SET|CLR|SAVE|FN|FP|S|R|AW|AD|OW|OD|XOW|XOD|UW|UD)(?![\\w#]))",
+      "captures": {
+        "1": { "name": "keyword.operator.logical.tia" }
+      }
+    },
+    "load-transfer": {
+      "match": "(?i)(?:^|(?<=[:;]))\\s*(LAR1|LAR2|TAR1|TAR2|TAR|CAR|TAK|PUSH|POP|ENT|LEAVE|CAD|CAW|ITD|DTR|ITB|DTB|BTI|BTD|RND\\+|RND-|RND|TRUNC|INVI|INVD|SLW|SRW|SLD|SRD|SSI|SSD|RLDA|RRDA|RLD|RRD|SP|SE|SD|SS|SF|FR|ZV|ZR|CU|CD|SI|SV|SA|LC|L|T)(?![\\w#])",
+      "captures": {
+        "1": { "name": "support.function.instruction.tia" }
+      }
+    },
+    "pointer": {
+      "match": "(?i)(?<![\\w#\".])P#[#\"\\w.]+(?:\\s+[\\d.]+)?",
+      "name": "constant.numeric.pointer.tia"
+    },
+    "constants": {
+      "match": "(?i)(?<![\\w#\".])(?:LDT|LD|LT|DT|TOD|S5T|DW|W|B|C|D|T|L)#(?:\\([^)]*\\)|(?:16#|8#|2#)?[^\\s;,)\\]]*)",
+      "name": "constant.numeric.typed.tia"
+    },
+    "absolute-operands": {
+      "patterns": [
+        {
+          "match": "(?i)(?<![\\w#\".])(?:DB\\d+\\.)?D[BI][XBWD]\\s*\\d+(?:\\.\\d+)?",
+          "name": "variable.other.absolute.tia"
+        },
+        {
+          "match": "(?i)(?<![\\w#\".])(?:P[IQ]|[IQMLEA])[BWD]?\\s*\\d+(?:\\.\\d+)?\\b",
+          "name": "variable.other.absolute.tia"
+        },
+        {
+          "match": "(?i)(?<![\\w#\".])(?:(?:DB\\d+\\.)?D[BI]|P[IQ]|[IQMLEA])?[XBWD](?=\\s*\\[)",
+          "name": "variable.other.absolute.tia"
+        },
+        {
+          "match": "(?i)(?<![\\w#\".])(?:SFC|SFB|UDT|VAT|FC|FB|OB|DB|DI|T|C|Z)\\s*\\d+\\b",
+          "name": "variable.other.absolute.tia"
+        }
+      ]
+    },
+    "registers": {
+      "match": "(?i)(?<![\\w#\".])\\b(?:AR[12])\\b",
+      "name": "variable.language.register.tia"
+    },
+    "parameters": {
+      "match": "(?<![\\w#\".])\\b([A-Za-z_]\\w*)(?=\\s*(?::=|=>))",
+      "captures": {
+        "1": { "name": "variable.parameter.tia" }
+      }
+    },
+    "assignment": {
+      "match": ":=|=>",
+      "name": "keyword.operator.assignment.tia"
+    }
+  }
+}

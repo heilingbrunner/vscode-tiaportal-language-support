@@ -1,0 +1,94 @@
+# vscode-tiaportal-syntaxes README
+
+Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
+
+## Languages
+
+| Language                                 | Extensions     | Scope name       |
+| ---------------------------------------- | -------------- | ---------------- |
+| [SCL](#scl--structured-control-language) | `.scl`         | `source.tia.scl` |
+| [AWL / STL](#awl--stl--statement-list)   | `.awl`, `.stl` | `source.tia.awl` |
+| [DB](#db--data-block)                    | `.db`          | `source.tia.db`  |
+| [UDT](#udt--user-defined-type)           | `.udt`         | `source.tia.udt` |
+
+All grammars share the same scope suffix (`.tia`), so one theme rule such as `keyword.control.tia` applies to every language.
+
+### SCL – Structured Control Language
+
+High-level, Pascal-like PLC language for function blocks, functions and organization blocks. This is the base grammar; the other three reuse parts of it.
+
+- Block structure: `FUNCTION_BLOCK`, `FUNCTION`, `ORGANIZATION_BLOCK`, `DATA_BLOCK`, `TYPE` with their `END_` counterparts, the block name, and `REGION` / `END_REGION`.
+- Interface sections: `VAR`, `VAR_INPUT`, `VAR_OUTPUT`, `VAR_IN_OUT`, `VAR_TEMP`, `VAR_STAT` with `RETAIN` / `NON_RETAIN` / `CONSTANT`, `STRUCT`, `BEGIN`, and the header lines `TITLE`, `AUTHOR`, `FAMILY`, `NAME`, `VERSION`.
+- Pragmas such as `{ S7_Optimized_Access := 'TRUE' }`, including pragmas that span several lines.
+- Control flow: `IF`, `CASE`, `FOR`, `WHILE`, `REPEAT`, `EXIT`, `CONTINUE`, `RETURN`, `GOTO`.
+- Data types (elementary, `Array`, `String[n]`, `HW_*` and similar) and quoted user types.
+- Literals: strings with `$` escapes, based numbers (`16#FF`), typed literals (`T#2s`, `DINT#5`, `LDT#…`), `TRUE` / `FALSE`, numbers, and `0..127` ranges.
+- References: local tags (`#name`), global tags (`"name"`), members, `%X0` slice access, built-in functions, named call parameters (`name :=`, `name =>`) and calls to quoted blocks.
+- Comments: `//`, `(* … *)` and `(/* … */)`.
+
+### AWL / STL – Statement List
+
+Instruction-list language, one instruction per row. A source file is split into a header and a body:
+
+- **Before `BEGIN`:** the SCL grammar highlights the header, pragmas and `VAR` sections.
+- **From `BEGIN` to the `END_*` of the block:** AWL rules apply, and each statement may carry a leading label.
+
+Highlighted in the body:
+
+- `NETWORK` and `TITLE = …` lines.
+- Labels (`next:`) and jump targets (`JC next`).
+- Instructions in the English and German mnemonic sets, grouped as logic (`A`/`U`, `O`, `X`, `S`, `R`, `=`, `A(` … `)`, word logic), arithmetic, comparison (`==I`, `>R`), load / transfer / convert / shift / timer / counter, jumps, calls (`CALL`, `CC`, `UC`) and program control (`BE`, `OPN`, `MCR(`).
+- Operands: absolute addresses (`I0.1`, `MW10`, `DB1.DBX0.0`, `T 5`, `FC 10`), symbolic tags (`"Tag"`, `#local`), registers `AR1` / `AR2`, pointers (`P#M 10.0`) and constants (`L#-5`, `W#16#FF`, `S5T#2s`, `B#(1, 2)`, `TOD#…`).
+- Call parameter lists with `:=` and `=>`.
+- Comments: `//` and `(* … *)`.
+
+> The mnemonic and operand rules follow the standard S7 instruction set. They have been checked against hand-written samples, not against real exports, so please report anything that is mis-scoped.
+
+### DB – Data Block
+
+Global and instance data blocks (`DATA_BLOCK "Name"` … `END_DATA_BLOCK`).
+
+- Everything from the SCL grammar: header lines, the block-level pragma (`{ S7_Optimized_Access := 'FALSE' }`), `VAR` / `STRUCT` member declarations with their attribute pragmas (`{ ExternalAccessible := 'False'; … }`), types, comments.
+- The instantiated function block of an instance DB: the quoted name on its own line, for example `"FB_Motor"`.
+- Start values after `BEGIN`: the target path (`Data.Event[3].TimeStamp`) is highlighted as a member, and the value as a literal (`LDT#…`, `DINT#…`, `T#…`, strings).
+
+### UDT – User-Defined Type
+
+PLC data types (`TYPE "Name"` … `END_TYPE`).
+
+- The UDT grammar is the SCL grammar: `TYPE` header, `TITLE`, `VERSION`, nested `STRUCT … END_STRUCT`, member attribute pragmas, quoted UDT references, `Array[a..b] of …`, `String[n]` and comments.
+- Initial values in declarations: plain and typed literals (`:= 1.5`, `:= T#2s`, `:= BYTE#16#FF`) and aggregate initializers (`[(1, ()), (2, ())]`, `[8(1.0)]`).
+
+## Development
+
+The grammars are in `syntaxes/`. `scripts/tokenize.js` tokenizes sample files with them and lists every token that has no scope, plus how often each scope occurs:
+
+```
+npm install
+npm run tokenize -- --dir <samples> --ext <scl|awl|db|udt> [--strict] [--top 25]
+```
+
+- `--dir` defaults to `test/`, which is git-ignored and holds local samples.
+- `--strict` exits with code 1 if any token has no scope.
+
+## Resources
+
+### AWL/STL – Statement List
+
+- [STL programming language](https://docs.tia.siemens.cloud/r/en-us/v21/creating-stl-programs-s7-300-s7-400-s7-1500/stl-basics-s7-300-s7-400-s7-1500/stl-programming-language-s7-300-s7-400-s7-1500)
+- [STL S7-1500](https://docs.tia.siemens.cloud/r/en-us/v21/stl-s7-1500)
+- [Creating STL Programs](https://docs.tia.siemens.cloud/r/en-us/v21/creating-stl-programs-s7-300-s7-400-s7-1500)
+
+### SCL – Structured Control Language
+
+- [SCL Programming Language](https://docs.tia.siemens.cloud/r/en-us/v21/creating-scl-programs/basics-of-scl/programming-language-scl)
+- [SCL S7-1200 / S7-1500 / S7-1200 G2](https://docs.tia.siemens.cloud/r/en-us/v21/scl-s7-1200-s7-1500-s7-1200-g2)
+- [Creating SCL Programs](https://docs.tia.siemens.cloud/r/en-us/v21/creating-scl-programs)
+
+### UDT – User-Defined Type
+
+- [Declaring PLC Data Types (UDT)](https://docs.tia.siemens.cloud/r/en-us/v21/declaring-plc-data-types-udt)
+
+### DB – Data Block
+
+- [Basic Principles for Programming of Data Blocks](https://docs.tia.siemens.cloud/r/en-us/v21/programming-data-blocks/basic-principles-for-programming-of-data-blocks)

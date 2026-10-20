@@ -1,0 +1,266 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "TIA.scl",
+  "scopeName": "source.tia.scl",
+  "fileTypes": ["scl"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#pragma" },
+    { "include": "#legacy-header" },
+    { "include": "#block-header" },
+    { "include": "#region" },
+    { "include": "#var-sections" },
+    { "include": "#struct" },
+    { "include": "#literals" },
+    { "include": "#declaration" },
+    { "include": "#control-keywords" },
+    { "include": "#types" },
+    { "include": "#calls" },
+    { "include": "#variable-refs" },
+    { "include": "#operators" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.multilingual.tia",
+          "begin": "\\(/\\*",
+          "end": "\\*/\\)"
+        },
+        {
+          "name": "comment.block.tia",
+          "begin": "\\(\\*",
+          "end": "\\*\\)"
+        },
+        {
+          "name": "comment.line.double-slash.tia",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "pragma": {
+      "name": "meta.pragma.tia",
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [
+        { "match": "(?i)\\b(PRAGMA_BEGIN|PRAGMA_END)\\b", "name": "keyword.other.pragma.tia" },
+        { "match": "[A-Za-z_]\\w*(?=\\s*:=)", "name": "entity.other.attribute-name.tia" },
+        { "include": "#strings" },
+        { "match": ":=", "name": "keyword.operator.assignment.tia" },
+        { "match": "[;,]", "name": "punctuation.separator.tia" }
+      ]
+    },
+    "legacy-header": {
+      "patterns": [
+        {
+          "match": "(?i)^\\s*(TITLE)\\s*(=)\\s*(.*?)\\s*$",
+          "captures": {
+            "1": { "name": "keyword.other.header.tia" },
+            "2": { "name": "keyword.operator.assignment.tia" },
+            "3": { "name": "string.unquoted.header.tia" }
+          }
+        },
+        {
+          "match": "(?i)^\\s*(AUTHOR|FAMILY|NAME)\\s*(:)(?!=)\\s*([^;]*?)\\s*$",
+          "captures": {
+            "1": { "name": "keyword.other.header.tia" },
+            "2": { "name": "punctuation.separator.tia" },
+            "3": { "name": "string.unquoted.header.tia" }
+          }
+        },
+        {
+          "match": "(?i)^\\s*(VERSION)\\s*(:)(?!=)(?=[^;]*$)",
+          "captures": {
+            "1": { "name": "keyword.other.header.tia" },
+            "2": { "name": "punctuation.separator.tia" }
+          }
+        }
+      ]
+    },
+    "block-header": {
+      "patterns": [
+        {
+          "match": "(?i)^\\s*(FUNCTION_BLOCK|FUNCTION|ORGANIZATION_BLOCK|DATA_BLOCK|TYPE)\\s+(\"[^\"]*\"|[A-Za-z_]\\w*)",
+          "captures": {
+            "1": { "name": "keyword.other.block.tia" },
+            "2": { "name": "entity.name.type.tia" }
+          }
+        },
+        {
+          "match": "(?i)^\\s*(END_(?:FUNCTION_BLOCK|FUNCTION|ORGANIZATION_BLOCK|DATA_BLOCK|TYPE))\\b",
+          "captures": {
+            "1": { "name": "keyword.other.block.tia" }
+          }
+        }
+      ]
+    },
+    "region": {
+      "patterns": [
+        {
+          "match": "(?i)^\\s*(REGION)\\b(.*)$",
+          "captures": {
+            "1": { "name": "keyword.control.region.tia" },
+            "2": { "name": "entity.name.section.tia" }
+          }
+        },
+        {
+          "match": "(?i)^\\s*(END_REGION)\\b",
+          "captures": {
+            "1": { "name": "keyword.control.region.tia" }
+          }
+        }
+      ]
+    },
+    "var-sections": {
+      "patterns": [
+        {
+          "match": "(?i)(?<![\\w#\".])\\b(VAR(?:_INPUT|_OUTPUT|_IN_OUT|_TEMP|_STAT|_GLOBAL)?)\\b(?:\\s+(RETAIN|NON_RETAIN|CONSTANT))?(?!\\s*:(?!=))",
+          "captures": {
+            "1": { "name": "keyword.control.section.tia" },
+            "2": { "name": "storage.modifier.tia" }
+          }
+        },
+        {
+          "match": "(?i)(?<![\\w#\".])\\b(END_VAR)\\b",
+          "name": "keyword.control.section.tia"
+        },
+        {
+          "match": "(?i)^\\s*(NON_RETAIN|RETAIN)\\s*$",
+          "captures": {
+            "1": { "name": "storage.modifier.tia" }
+          }
+        },
+        {
+          "match": "(?i)(?<![\\w#\".])\\b(BEGIN)\\b(?!\\s*:(?!=))",
+          "name": "keyword.control.section.tia"
+        }
+      ]
+    },
+    "struct": {
+      "match": "(?i)(?<![\\w#\".])\\b(STRUCT|END_STRUCT)\\b",
+      "name": "keyword.other.struct.tia"
+    },
+    "strings": {
+      "name": "string.quoted.single.tia",
+      "begin": "'",
+      "end": "'|(?=$)",
+      "patterns": [
+        { "match": "\\$(?:[0-9A-Fa-f]{2}|.)", "name": "constant.character.escape.tia" }
+      ]
+    },
+    "literals": {
+      "patterns": [
+        { "include": "#strings" },
+        {
+          "match": "(?i)(?<![\\w#\".])(?:LDT|DTL|DT|LTOD|TOD|LTIME|TIME|LT|T|LDATE|DATE|D|SINT|USINT|INT|UINT|DINT|UDINT|LINT|ULINT|BYTE|WORD|DWORD|LWORD|BOOL|REAL|LREAL|CHAR|WCHAR|STRING|WSTRING)#[^\\s;,)\\]]*",
+          "name": "constant.numeric.typed.tia"
+        },
+        {
+          "match": "(?<![\\w#\".])(?:2|8|16)#[0-9A-Fa-f_]+",
+          "name": "constant.numeric.based.tia"
+        },
+        {
+          "match": "(?i)(?<![\\w#\".])\\b(TRUE|FALSE|NULL)\\b",
+          "name": "constant.language.tia"
+        },
+        {
+          "match": "(?:(?<![\\w#\".])|(?<=\\.\\.))\\d[\\d_]*(?:\\.(?!\\.)\\d[\\d_]*)?(?:[eE][+-]?\\d+)?\\b",
+          "name": "constant.numeric.tia"
+        }
+      ]
+    },
+    "declaration": {
+      "match": "^\\s*([A-Za-z_]\\w*|\"[^\"]*\")(?=\\s*(?:\\{[^}]*\\}\\s*)?:(?!=))",
+      "captures": {
+        "1": { "name": "variable.other.member.tia" }
+      }
+    },
+    "control-keywords": {
+      "match": "(?i)(?<![\\w#\".])\\b(IF|THEN|ELSIF|ELSE|END_IF|CASE|OF|END_CASE|FOR|TO|BY|DO|END_FOR|WHILE|END_WHILE|REPEAT|UNTIL|END_REPEAT|EXIT|CONTINUE|RETURN|GOTO|JMP|LABEL|END_LABEL)\\b(?!\\s*:(?!=))",
+      "name": "keyword.control.tia"
+    },
+    "types": {
+      "patterns": [
+        {
+          "match": "(?i)(?<![\\w#\".])\\b(Bool|Byte|Word|DWord|LWord|SInt|Int|DInt|LInt|USInt|UInt|UDInt|ULInt|Real|LReal|Char|WChar|String|WString|Time|LTime|Time_Of_Day|LTime_Of_Day|TOD|LTOD|Date|LDate|Date_And_Time|DT|DTL|LDT|Void|Variant|Pointer|Any|Array|Timer|Counter|DB_ANY|Block_FB|Block_FC|Block_DB|Block_SDB|VREF|AREF|HW_\\w+|OB_\\w+|CONN_\\w+|EVENT_\\w+|TON_TIME|TOF_TIME|TP_TIME|TON|TOF|TP|TONR|CTU|CTD|CTUD|R_TRIG|F_TRIG)\\b(?!\\s*\\()",
+          "name": "storage.type.tia"
+        },
+        {
+          "match": "(?i:(?<=:)|(?<=\\bof))(\\s*)(\"[^\"]*\")",
+          "captures": {
+            "2": { "name": "storage.type.user.tia" }
+          }
+        }
+      ]
+    },
+    "calls": {
+      "patterns": [
+        {
+          "match": "(?i)(?<![\\w#\".])\\b(?:[A-Z]+_TO_[A-Z]+|SHR|SHL|ROL|ROR|CONCAT|LEN|LEFT|RIGHT|MID|INSERT|DELETE|REPLACE|FIND|ABS|SQRT|LN|LOG|EXP|EXPT|SIN|COS|TAN|ASIN|ACOS|ATAN|MIN|MAX|LIMIT|SEL|MUX|TRUNC|ROUND|CEIL|FLOOR|SWAP|BITSUM|PEEK(?:_BOOL|_BYTE|_WORD|_DWORD)?|POKE(?:_BOOL|_BLK)?|LOWER_BOUND|UPPER_BOUND|TIME_TCK|VAL_STRG|STRG_VAL|ATTR_DB|RDREC(?:_1)?|WRREC(?:_1)?|MOVE_BLK|MOVE_BLK_VARIANT|FILL_BLK|GET_ERR_ID|GET_ERROR|RUNTIME)\\b(?=\\s*\\()",
+          "name": "support.function.builtin.tia"
+        },
+        {
+          "match": "\"[^\"]*\"(?=\\s*\\()",
+          "name": "entity.name.function.call.tia"
+        },
+        {
+          "match": "(?<![\\w#\".])\\b([A-Za-z_]\\w*)(?=\\s*(?::=|=>))",
+          "name": "variable.parameter.tia"
+        }
+      ]
+    },
+    "variable-refs": {
+      "patterns": [
+        {
+          "match": "#\"[^\"]*\"",
+          "name": "variable.other.local.tia"
+        },
+        {
+          "match": "#[A-Za-z_]\\w*",
+          "name": "variable.other.local.tia"
+        },
+        {
+          "match": "(?i)(?<=\\.)%(?:X|B|W|DW|LW)\\d+",
+          "name": "variable.other.member.slice.tia"
+        },
+        {
+          "match": "(?<=[\\w\\])\"]\\.)[A-Za-z_]\\w*",
+          "name": "variable.other.member.tia"
+        },
+        {
+          "match": "\"[^\"]*\"",
+          "name": "variable.other.global.tia"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "match": "(?i)(?<![\\w#\".])\\b(AND|OR|XOR|NOT|MOD|REF)\\b(?!\\s*:(?!=))",
+          "name": "keyword.operator.word.tia"
+        },
+        {
+          "match": ":=|\\+=|-=|\\*=|/=|\\?=|=>",
+          "name": "keyword.operator.assignment.tia"
+        },
+        {
+          "match": "\\.\\.",
+          "name": "keyword.operator.range.tia"
+        },
+        {
+          "match": "<>|<=|>=|\\*\\*|[<>=+\\-*/&^]",
+          "name": "keyword.operator.tia"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        { "match": ";", "name": "punctuation.terminator.statement.tia" },
+        { "match": "[,:.]", "name": "punctuation.separator.tia" },
+        { "match": "[\\[\\]]", "name": "punctuation.section.brackets.tia" },
+        { "match": "[()]", "name": "punctuation.section.parens.tia" }
+      ]
+    }
+  }
+}

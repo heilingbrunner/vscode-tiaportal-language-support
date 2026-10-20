@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "TIA.db",
+  "scopeName": "source.tia.db",
+  "fileTypes": ["db"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#instance-of" },
+    { "include": "#start-value" },
+    { "include": "source.tia.scl" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        { "include": "source.tia.scl#comments" }
+      ]
+    },
+    "instance-of": {
+      "match": "^\\s*(\"[^\"]*\")\\s*$",
+      "captures": {
+        "1": { "name": "storage.type.user.tia" }
+      }
+    },
+    "start-value": {
+      "match": "^\\s*((?:[A-Za-z_]\\w*|\"[^\"]*\")(?:\\[[^\\]]*\\])*(?:\\.(?:[A-Za-z_]\\w*|\"[^\"]*\")(?:\\[[^\\]]*\\])*)*)(?=\\s*:=)",
+      "captures": {
+        "1": { "name": "variable.other.member.tia" }
+      }
+    }
+  }
+}

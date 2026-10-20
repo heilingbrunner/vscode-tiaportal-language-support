@@ -1,0 +1,111 @@
+{
+    "name": "vscode-tiaportal-language-support",
+    "author": {
+        "name": "j.heilingbrunner",
+        "email": "j.heilingbrunner@gmail.com"
+    },
+    "publisher": "JHeilingbrunner",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/heilingbrunner/vscode-tiaportal-language-support.git"
+    },
+    "displayName": "TIA Portal Language Support",
+    "description": "Syntax highlighting for Siemens TIA Portal",
+    "icon": "assets/vscode-tiaportal-syntaxes-logo.png",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.140.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "keywords": [
+        "vscode",
+        "tia",
+        "tia-portal",
+        "syntax highlighting",
+        "siemens",
+        "awl",
+        "stl",
+        "db",
+        "udt",
+        "scl"
+    ],
+    "scripts": {
+        "tokenize": "node scripts/tokenize.js"
+    },
+    "devDependencies": {
+        "vscode-oniguruma": "2.0.1",
+        "vscode-textmate": "9.2.0"
+    },
+    "contributes": {
+        "languages": [
+            {
+                "id": "scl",
+                "aliases": [
+                    "TIA Portal: Structured Control Language",
+                    "scl"
+                ],
+                "extensions": [
+                    ".scl"
+                ],
+                "configuration": "./language-configuration.json"
+            },
+            {
+                "id": "awl",
+                "aliases": [
+                    "TIA Portal: Statement List",
+                    "awl",
+                    "stl"
+                ],
+                "extensions": [
+                    ".awl",
+                    ".stl"
+                ],
+                "configuration": "./language-configuration.json"
+            },
+            {
+                "id": "db",
+                "aliases": [
+                    "TIA Portal: Data Block",
+                    "db"
+                ],
+                "extensions": [
+                    ".db"
+                ]
+            },
+            {
+                "id": "udt",
+                "aliases": [
+                    "TIA Portal: User-Defined Type",
+                    "udt"
+                ],
+                "extensions": [
+                    ".udt"
+                ]
+            }
+        ],
+        "grammars": [
+            {
+                "language": "scl",
+                "scopeName": "source.tia.scl",
+                "path": "./syntaxes/scl.tmLanguage.json"
+            },
+            {
+                "language": "awl",
+                "scopeName": "source.tia.awl",
+                "path": "./syntaxes/awl.tmLanguage.json"
+            },
+            {
+                "language": "db",
+                "scopeName": "source.tia.db",
+                "path": "./syntaxes/db.tmLanguage.json"
+            },
+            {
+                "language": "udt",
+                "scopeName": "source.tia.udt",
+                "path": "./syntaxes/udt.tmLanguage.json"
+            }
+        ]
+    }
+}
