@@ -1,4 +1,4 @@
-# vscode-tiaportal-syntaxes README
+# vscode-tiaportal-language-support
 
 Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 
