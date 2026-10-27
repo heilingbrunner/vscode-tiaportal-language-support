@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V21" />
+  <SW.Blocks.FB ID="0">
+    <AttributeList>
+      <Interface>
+        <Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+          <Section Name="Input">
+            <Member Name="Start" Datatype="Bool">
+              <Comment>
+                <MultiLanguageText Lang="de-DE">Start button</MultiLanguageText>
+              </Comment>
+            </Member>
+          </Section>
+          <Section Name="Static">
+            <Member Name="Ins_Delay" Datatype="TON_TIME" Remanence="SetInIDB" />
+            <Member Name="Pos" Datatype="Struct">
+              <Member Name="X" Datatype="Int">
+                <StartValue>5</StartValue>
+              </Member>
+            </Member>
+          </Section>
+        </Sections>
+      </Interface>
+      <MemoryLayout>Optimized</MemoryLayout>
+      <Name>Demo</Name>
+      <Number>10</Number>
+      <ProgrammingLanguage>LAD</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+      <SW.Blocks.CompileUnit ID="3" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+              <Parts>
+                <Access Scope="LocalVariable" UId="21"><Symbol><Component Name="Start" /></Symbol></Access>
+                <Access Scope="LiteralConstant" UId="22"><Constant><ConstantType>Time</ConstantType><ConstantValue>T#5s</ConstantValue></Constant></Access>
+                <Access Scope="LocalVariable" UId="23"><Symbol><Component Name="Run" /></Symbol></Access>
+                <Part Name="Contact" UId="24"><Negated Name="operand" /></Part>
+                <Part Name="TON" Version="1.0" UId="25">
+                  <Instance Scope="LocalVariable" UId="26"><Component Name="Ins_Delay" /></Instance>
+                  <TemplateValue Name="time_type" Type="Type">Time</TemplateValue>
+                </Part>
+                <Part Name="Coil" UId="27" />
+              </Parts>
+              <Wires>
+                <Wire UId="30"><Powerrail /><NameCon UId="24" Name="in" /></Wire>
+                <Wire UId="31"><IdentCon UId="21" /><NameCon UId="24" Name="operand" /></Wire>
+                <Wire UId="32"><NameCon UId="24" Name="out" /><NameCon UId="25" Name="in" /></Wire>
+                <Wire UId="33"><IdentCon UId="22" /><NameCon UId="25" Name="pt" /></Wire>
+                <Wire UId="34"><NameCon UId="25" Name="q" /><NameCon UId="27" Name="in" /></Wire>
+                <Wire UId="35"><IdentCon UId="23" /><NameCon UId="27" Name="operand" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="4" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="5" CompositionName="Items">
+                <AttributeList><Culture>de-DE</Culture><Text>Delay</Text></AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="6" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+              <Parts>
+                <Access Scope="LocalVariable" UId="21"><Symbol><Component Name="Pos" /><Component Name="X" /></Symbol></Access>
+                <Access Scope="LiteralConstant" UId="22"><Constant><ConstantValue>10</ConstantValue></Constant></Access>
+                <Access Scope="LiteralConstant" UId="23"><Constant><ConstantValue>1</ConstantValue></Constant></Access>
+                <Access Scope="LocalVariable" UId="24"><Symbol><Component Name="Result" /></Symbol></Access>
+                <Part Name="Gt" UId="25"><TemplateValue Name="SrcType" Type="Type">Int</TemplateValue></Part>
+                <Part Name="Move" UId="26" DisabledENO="true"><TemplateValue Name="Card" Type="Cardinality">1</TemplateValue></Part>
+              </Parts>
+              <Wires>
+                <Wire UId="30"><Powerrail /><NameCon UId="25" Name="pre" /></Wire>
+                <Wire UId="31"><IdentCon UId="21" /><NameCon UId="25" Name="in1" /></Wire>
+                <Wire UId="32"><IdentCon UId="22" /><NameCon UId="25" Name="in2" /></Wire>
+                <Wire UId="33"><NameCon UId="25" Name="out" /><NameCon UId="26" Name="en" /></Wire>
+                <Wire UId="34"><IdentCon UId="23" /><NameCon UId="26" Name="in" /></Wire>
+                <Wire UId="35"><NameCon UId="26" Name="out1" /><IdentCon UId="24" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="7" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <StatementList xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StatementList/v5">
+              <StlStatement UId="21">
+                <StlToken Text="A" />
+                <Access Scope="LocalVariable"><Symbol><Component Name="Start" /></Symbol></Access>
+              </StlStatement>
+              <StlStatement UId="22">
+                <StlToken Text="=" />
+                <Access Scope="LocalVariable"><Symbol><Component Name="Run" /></Symbol></Access>
+              </StlStatement>
+            </StatementList>
+          </NetworkSource>
+          <ProgrammingLanguage>STL</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="8" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v4">
+              <Access Scope="LocalVariable" UId="21"><Symbol><Component Name="Run" /></Symbol></Access>
+              <Blank />
+              <Token Text=":=" />
+              <Blank />
+              <Access Scope="LocalVariable" UId="22"><Symbol><Component Name="Start" /></Symbol></Access>
+              <Token Text=";" />
+              <NewLine />
+              <LineComment><Text> done</Text></LineComment>
+            </StructuredText>
+          </NetworkSource>
+          <ProgrammingLanguage>SCL</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="9" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource />
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
+    </ObjectList>
+  </SW.Blocks.FB>
+</Document>

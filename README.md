@@ -59,7 +59,20 @@ PLC data types (`TYPE "Name"` … `END_TYPE`).
 - The UDT grammar is the SCL grammar: `TYPE` header, `TITLE`, `VERSION`, nested `STRUCT … END_STRUCT`, member attribute pragmas, quoted UDT references, `Array[a..b] of …`, `String[n]` and comments.
 - Initial values in declarations: plain and typed literals (`:= 1.5`, `:= T#2s`, `:= BYTE#16#FF`) and aggregate initializers (`[(1, ()), (2, ())]`, `[8(1.0)]`).
 
+## TIA Block View (XML)
+
+A read-only viewer for blocks exported from TIA Portal as Openness XML (FB, FC, OB). It shows the interface table, block and network titles/comments and the networks:
+
+- **LAD** is drawn as a ladder diagram: contacts (incl. negated and edge), coils (`S`, `R`), OR branches, FB/FC calls with instance and parameters, timers, comparators, math and `Move`. Parts without a dedicated symbol are drawn as a generic box.
+- **SCL** and **STL** networks are shown as source text.
+
+Open an `.xml` file with *Reopen Editor With… > TIA Block View*, or run *TIA: Open Block View to the Side*. The setting `tiaBlockView.culture` (for example `de-DE`) selects the language of titles and comments.
+
+Callee block numbers (`%FB1`, `%DB43`) are not part of the export and are not shown.
+
 ## Development
+
+`npm run build` bundles the extension (`src/` → `dist/`), `npm test` runs the unit tests in `tests/` (fixtures in `fixtures/`; every XML under the git-ignored `test/Project` is additionally parsed and laid out when present), `npm run typecheck` runs `tsc`. Press F5 to start an Extension Development Host.
 
 The grammars are in `syntaxes/`. `scripts/tokenize.js` tokenizes sample files with them and lists every token that has no scope, plus how often each scope occurs:
 

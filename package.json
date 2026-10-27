@@ -31,14 +31,71 @@
         "udt",
         "scl"
     ],
+    "main": "./dist/extension.js",
     "scripts": {
-        "tokenize": "node scripts/tokenize.js"
+        "tokenize": "node scripts/tokenize.js",
+        "build": "node esbuild.mjs",
+        "watch": "node esbuild.mjs --watch",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "vscode:prepublish": "node esbuild.mjs --production"
     },
     "devDependencies": {
+        "@types/node": "^26.6.5",
+        "@types/vscode": "^1.140.0",
+        "@vscode/vsce": "^4.0.0",
+        "esbuild": "^0.28.2",
+        "fast-xml-parser": "^5.11.2",
+        "typescript": "^7.0.2",
+        "vitest": "^5.0.5",
         "vscode-oniguruma": "2.0.1",
         "vscode-textmate": "9.2.0"
     },
     "contributes": {
+        "customEditors": [
+            {
+                "viewType": "tia.blockView",
+                "displayName": "TIA Block View",
+                "selector": [
+                    {
+                        "filenamePattern": "*.xml"
+                    }
+                ],
+                "priority": "option"
+            }
+        ],
+        "commands": [
+            {
+                "command": "tia.openBlockView",
+                "title": "TIA: Open Block View to the Side"
+            }
+        ],
+        "menus": {
+            "editor/title": [
+                {
+                    "command": "tia.openBlockView",
+                    "when": "resourceExtname == .xml",
+                    "group": "navigation"
+                }
+            ],
+            "explorer/context": [
+                {
+                    "command": "tia.openBlockView",
+                    "when": "resourceExtname == .xml",
+                    "group": "navigation"
+                }
+            ]
+        },
+        "configuration": {
+            "title": "TIA Block View",
+            "properties": {
+                "tiaBlockView.culture": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Culture used for titles and comments in the block view (for example de-DE). Empty = first available text."
+                }
+            }
+        },
         "languages": [
             {
                 "id": "scl",

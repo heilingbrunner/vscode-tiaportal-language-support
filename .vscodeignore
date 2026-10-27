@@ -2,7 +2,14 @@
 .vscode-test/**
 .gitignore
 test/**
+tests/**
+fixtures/**
+src/**
 scripts/**
+tsconfig.json
+esbuild.mjs
+vitest.config.mjs
+**/*.map
 node_modules/**
 package-lock.json
 vsc-extension-quickstart.md
