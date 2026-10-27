@@ -8,6 +8,17 @@
   SCL/STL networks as source text
 - Open via "Reopen Editor With… > TIA Block View" or the command "TIA: Open Block View to the Side"
 - Setting `tiaBlockView.culture` selects the language of titles and comments
+- The TIA Block View also opens **data block sources (`*.db`)**: row-numbered table with data type,
+  start value (type defaults greyed, `BEGIN` assignments applied), retain, accessible/writable/visible/setpoint
+  flags and comments; structs, arrays and UDT members are expandable. UDT members are resolved from
+  the `*.udt` files of the workspace. Instance data blocks show the function block they belong to.
+  Optimized (`VAR`), non-optimized (`STRUCT`) and single-array data blocks are supported.
+- The TIA Block View also opens **SCL sources (`*.scl`)** (function blocks, functions, organization blocks):
+  interface table (greyed defaults, retain, comments, UDT members) above the code, which is shown with
+  line numbers, syntax highlighting from the extension's SCL grammar, fold markers for
+  `IF`/`CASE`/`FOR`/`WHILE`/`REPEAT`/`REGION`/comments and a clickable `REGION` outline.
+- Interface row numbers now count only the visible rows and update on expand/collapse; struct and UDT
+  rows start collapsed.
 
 ## [0.0.2]
 

@@ -59,6 +59,12 @@
                 "selector": [
                     {
                         "filenamePattern": "*.xml"
+                    },
+                    {
+                        "filenamePattern": "*.db"
+                    },
+                    {
+                        "filenamePattern": "*.scl"
                     }
                 ],
                 "priority": "option"
@@ -74,14 +80,14 @@
             "editor/title": [
                 {
                     "command": "tia.openBlockView",
-                    "when": "resourceExtname == .xml",
+                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .scl",
                     "group": "navigation"
                 }
             ],
             "explorer/context": [
                 {
                     "command": "tia.openBlockView",
-                    "when": "resourceExtname == .xml",
+                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .scl",
                     "group": "navigation"
                 }
             ]

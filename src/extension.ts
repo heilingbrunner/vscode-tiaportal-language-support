@@ -1,9 +1,15 @@
 import * as vscode from 'vscode';
+import { HighlighterService } from './provider/highlighterService';
 import { TiaBlockEditorProvider, VIEW_TYPE } from './provider/tiaBlockEditor';
+import { UdtIndex } from './provider/udtIndex';
 
 export function activate(context: vscode.ExtensionContext): void {
+  const udts = new UdtIndex();
+  const highlighter = new HighlighterService(context.extensionUri);
   context.subscriptions.push(
-    vscode.window.registerCustomEditorProvider(VIEW_TYPE, new TiaBlockEditorProvider(context.extensionUri), {
+    udts,
+    highlighter,
+    vscode.window.registerCustomEditorProvider(VIEW_TYPE, new TiaBlockEditorProvider(context.extensionUri, udts, highlighter), {
       supportsMultipleEditorsPerDocument: true,
     }),
     vscode.commands.registerCommand('tia.openBlockView', async (resource?: vscode.Uri) => {

@@ -21,8 +21,11 @@ const texts = (scene: LadScene): string[] =>
 const ofType = <T extends SceneItem['t']>(scene: LadScene, t: T): Array<Extract<SceneItem, { t: T }>> =>
   scene.items.filter((i): i is Extract<SceneItem, { t: T }> => i.t === t);
 
-describe('CMN_Main.xml (real export)', () => {
-  const block = parseBlock(fixture('CMN_Main.xml'), 'de-DE');
+/** A real export from the local, git-ignored project; these tests are skipped when it is absent. */
+const cmnMainFile = join(root, 'test', 'Project', 'PC-System_1', 'Software PLC_1', 'Program blocks', '4_Modules', '00_CMN', 'CMN_Main.xml');
+
+describe.skipIf(!existsSync(cmnMainFile))('CMN_Main.xml (local real export)', () => {
+  const block = existsSync(cmnMainFile) ? parseBlock(readFileSync(cmnMainFile, 'utf-8'), 'de-DE') : undefined;
 
   it('reads block metadata and title', () => {
     expect(block).toMatchObject({ kind: 'FB', name: 'CMN_Main', number: '6', language: 'LAD', title: 'Modul Common Main' });

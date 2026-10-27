@@ -1,0 +1,36 @@
+DATA_BLOCK "Demo_DB"
+{ S7_Optimized_Access := 'TRUE' }
+TITLE = Demo data block
+AUTHOR : tester
+FAMILY : demo
+VERSION : 0.1
+NON_RETAIN
+   VAR
+      Info : Struct   // Information block
+         Cycle : Time;   // Last cycle time
+         Pos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real := 1.5;
+         Stamp {InstructionName := 'DTL'; LibVersion := '1.0'} : DTL;
+         Flags : Array[0..3] of Bool;
+         Name : String[16] := 'valve';
+         Sub : Struct
+            Level : Int := 7;
+         END_STRUCT;
+      END_STRUCT;
+      Valve1 { S7_SetPoint := 'False'} : "DataTyp_Valve";   // first valve
+      Missing : "Unknown_Type";
+      Rows : Array[1..2] of Struct
+         Id : Int;
+      END_STRUCT;
+      Big : Array[0..1000] of Int;
+      Count { S7_SetPoint := 'True'} : DInt;
+   END_VAR
+   VAR RETAIN
+      Kept : Bool;
+   END_VAR
+
+BEGIN
+   Info.Cycle := T#25s;
+   Info.Flags[2] := TRUE;
+   Rows[2].Id := 9;
+   Valve1.Retries := 5;
+END_DATA_BLOCK

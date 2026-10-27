@@ -1,0 +1,10 @@
+TYPE "DataTyp_Valve"
+VERSION : 0.1
+   STRUCT
+      Open { S7_SetPoint := 'False'} : Bool := false;   // Command: open valve
+      Position { S7_SetPoint := 'False'} : Real := 0.0;   // Position [%]
+      Retries { S7_SetPoint := 'False'} : USInt := 3;
+      Name { S7_SetPoint := 'False'} : String[16] := 'valve';
+   END_STRUCT;
+
+END_TYPE

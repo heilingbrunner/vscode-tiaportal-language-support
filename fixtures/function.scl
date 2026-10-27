@@ -1,0 +1,15 @@
+FUNCTION "Demo_FC" : Int
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT
+      Ii_Raw : Int;
+   END_VAR
+
+   VAR_TEMP
+      ti_tmp : Int;
+   END_VAR
+
+BEGIN
+	#ti_tmp := #Ii_Raw * 2;
+	#Demo_FC := #ti_tmp;
+END_FUNCTION

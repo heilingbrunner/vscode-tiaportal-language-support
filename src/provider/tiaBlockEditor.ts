@@ -1,9 +1,19 @@
 import { randomBytes } from 'node:crypto';
 import * as vscode from 'vscode';
 import { parseBlock } from '../parser/blockParser';
+import { parseDataBlock } from '../parser/dbParser';
+import { parseScl } from '../parser/sclParser';
+import type { BlockModel } from '../model/types';
 import { renderBlockHtml, renderMessageHtml, type HtmlAssets } from '../render/html';
+import { withHighlighting } from '../render/sclHighlighter';
+import type { HighlighterService } from './highlighterService';
+import type { UdtIndex } from './udtIndex';
 
 export const VIEW_TYPE = 'tia.blockView';
+
+const hasExtension = (uri: vscode.Uri, extension: string): boolean => uri.path.toLowerCase().endsWith(extension);
+/** Text sources (`.db`, `.scl`) resolve UDT members from the workspace; XML exports do not. */
+const usesUdts = (uri: vscode.Uri): boolean => hasExtension(uri, '.db') || hasExtension(uri, '.scl');
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
 class BlockDocument implements vscode.CustomDocument {
@@ -20,7 +30,11 @@ function errorMessage(error: unknown): string {
 
 /** Read-only custom editor that shows a TIA Openness block export as a TIA-style view. */
 export class TiaBlockEditorProvider implements vscode.CustomReadonlyEditorProvider<BlockDocument> {
-  constructor(private readonly extensionUri: vscode.Uri) {}
+  constructor(
+    private readonly extensionUri: vscode.Uri,
+    private readonly udts: UdtIndex,
+    private readonly highlighter: HighlighterService,
+  ) {}
 
   openCustomDocument(uri: vscode.Uri): BlockDocument {
     return new BlockDocument(uri);
@@ -39,8 +53,9 @@ export class TiaBlockEditorProvider implements vscode.CustomReadonlyEditorProvid
         panel.webview.html = html;
       }
     };
-    await render();
 
+    // subscriptions and the dispose handler exist before the first (async) render, so closing the panel
+    // while it is still rendering cannot leak the watcher or write to a disposed webview
     const folder = vscode.Uri.joinPath(document.uri, '..');
     const name = document.uri.path.slice(document.uri.path.lastIndexOf('/') + 1);
     // file names are matched as a glob: escape glob metacharacters such as [ ] { } * ?
@@ -51,10 +66,15 @@ export class TiaBlockEditorProvider implements vscode.CustomReadonlyEditorProvid
       watcher.onDidChange(() => void render()),
       watcher.onDidCreate(() => void render()),
     ];
+    if (usesUdts(document.uri)) {
+      // a changed UDT can change the expanded members of this data block
+      subscriptions.push(this.udts.onDidChange(() => void render()));
+    }
     panel.onDidDispose(() => {
       disposed = true;
       subscriptions.forEach((s) => s.dispose());
     });
+    await render();
   }
 
   private async buildHtml(uri: vscode.Uri, webview: vscode.Webview, mediaRoot: vscode.Uri): Promise<string> {
@@ -67,16 +87,43 @@ export class TiaBlockEditorProvider implements vscode.CustomReadonlyEditorProvid
     try {
       const bytes = await vscode.workspace.fs.readFile(uri);
       if (bytes.byteLength > MAX_FILE_BYTES) {
-        return renderMessageHtml('This XML file is too large for the TIA block view (limit: 50 MB).', assets);
+        return renderMessageHtml('This file is too large for the TIA block view (limit: 50 MB).', assets);
       }
-      const culture = vscode.workspace.getConfiguration('tiaBlockView').get<string>('culture', '');
-      const model = parseBlock(new TextDecoder('utf-8').decode(bytes), culture);
+      const text = new TextDecoder('utf-8').decode(bytes);
+      const model = await this.parse(uri, text);
       if (!model) {
-        return renderMessageHtml('This XML file is not a TIA Portal block export (FB, FC or OB).', assets);
+        return renderMessageHtml('This file is not a TIA Portal block export (FB, FC or OB).', assets);
       }
       return renderBlockHtml(model, assets);
     } catch (error: unknown) {
-      return renderMessageHtml(`The file could not be read as TIA Openness XML: ${errorMessage(error)}`, assets);
+      const what = hasExtension(uri, '.db')
+        ? 'TIA data block source'
+        : hasExtension(uri, '.scl')
+          ? 'TIA SCL source'
+          : 'TIA Openness XML';
+      return renderMessageHtml(`The file could not be read as ${what}: ${errorMessage(error)}`, assets);
+    }
+  }
+
+  private async parse(uri: vscode.Uri, text: string): Promise<BlockModel | undefined> {
+    if (hasExtension(uri, '.db')) {
+      return parseDataBlock(text, await this.udts.resolver());
+    }
+    if (hasExtension(uri, '.scl')) {
+      const model = parseScl(text, await this.udts.resolver());
+      return this.highlight(model);
+    }
+    const culture = vscode.workspace.getConfiguration('tiaBlockView').get<string>('culture', '');
+    return parseBlock(text, culture);
+  }
+
+  /** Adds syntax highlighting; any highlighter problem leaves the code as plain text instead of failing the view. */
+  private async highlight(model: BlockModel): Promise<BlockModel> {
+    try {
+      const highlighter = await this.highlighter.get();
+      return highlighter ? withHighlighting(model, highlighter) : model;
+    } catch {
+      return model;
     }
   }
 }

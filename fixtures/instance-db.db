@@ -1,0 +1,9 @@
+DATA_BLOCK "CMN_Demo_DB"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+"CMN_Demo"
+
+BEGIN
+
+END_DATA_BLOCK

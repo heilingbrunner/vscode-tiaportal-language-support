@@ -1,6 +1,6 @@
 import type { LadScene } from '../layout/scene';
 
-export type BlockKind = 'FB' | 'FC' | 'OB';
+export type BlockKind = 'FB' | 'FC' | 'OB' | 'DB';
 
 export interface InterfaceMember {
   name: string;
@@ -8,6 +8,10 @@ export interface InterfaceMember {
   startValue: string;
   /** Display text for the Retain column ("Retain", "Non-retain", "Set in IDB" or empty). */
   retain: string;
+  /** Data blocks only: the member is retained (shown as a checkbox). */
+  retainChecked?: boolean;
+  /** Data blocks only: `startValue` is the type default, which TIA shows greyed. */
+  startIsDefault?: boolean;
   accessible: boolean;
   writable: boolean;
   visible: boolean;
@@ -34,8 +38,49 @@ export interface NetworkModel {
   body: NetworkBody;
 }
 
+/** A run of source text with one highlight class (empty class = plain text). */
+export interface CodeToken {
+  text: string;
+  cls: string;
+}
+
+/** A `REGION ... END_REGION` entry of the code outline; `line` is 1-based. */
+export interface Region {
+  name: string;
+  line: number;
+  depth: number;
+}
+
+/** A foldable range of code lines (1-based, inclusive). */
+export interface Fold {
+  from: number;
+  to: number;
+}
+
+/** SCL code of a block source; `tokens` is filled in by the highlighter when available. */
+export interface CodeInfo {
+  lines: string[];
+  regions: Region[];
+  folds: Fold[];
+  tokens?: CodeToken[][];
+}
+
+export interface DataBlockInfo {
+  optimizedAccess: boolean;
+  nonRetain: boolean;
+  version: string;
+  family: string;
+  author: string;
+  /** Name of the function block for an instance data block, else empty. */
+  instanceOf: string;
+}
+
 export interface BlockModel {
   kind: BlockKind;
+  /** Present for `kind === 'DB'`. */
+  dataBlock?: DataBlockInfo;
+  /** Present for blocks read from SCL source. */
+  code?: CodeInfo;
   name: string;
   number: string;
   language: string;
