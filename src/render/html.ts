@@ -92,6 +92,8 @@ function networkBody(network: NetworkModel): string {
       return `<div class="scroll">${sceneToSvg(body.scene)}</div>`;
     case 'text':
       return `<pre class="code lang-${escapeHtml(body.language.toLowerCase())}">${escapeHtml(body.lines.join('\n'))}</pre>`;
+    case 'code':
+      return renderCode({ lines: body.lines, regions: [], folds: [], tokens: body.tokens }, `n${network.index}-`);
     case 'empty':
       return '<div class="empty">(empty network)</div>';
   }
@@ -149,7 +151,7 @@ export function renderBlockHtml(model: BlockModel, assets: HtmlAssets): string {
   const csp =
     `default-src 'none'; style-src ${assets.cspSource}; script-src 'nonce-${assets.nonce}'; img-src ${assets.cspSource} data:;`;
   const zoom =
-    model.networks.length > 0
+    model.networks.some((n) => n.body.kind === 'lad')
       ? '<label class="zoom">Zoom <input id="zoom" type="range" min="50" max="200" step="10" value="100"><output id="zoom-out">100%</output></label>'
       : '';
   return `<!DOCTYPE html>

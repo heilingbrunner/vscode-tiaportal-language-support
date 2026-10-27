@@ -205,7 +205,7 @@ describe('SCL highlighting and rendering', () => {
   });
 
   it('renders outline, fold toggles, highlighted code and no empty title band', () => {
-    const html = renderBlockHtml(withHighlighting(fb, highlighter), assets);
+    const html = renderBlockHtml(withHighlighting(fb, { scl: highlighter }), assets);
     expect(html).toContain('class="code-view"');
     expect(html).toContain('data-line="12" data-depth="1"');
     expect(html).toContain('data-from="1" data-to="9"');
@@ -218,7 +218,7 @@ describe('SCL highlighting and rendering', () => {
 
   it('escapes code text', () => {
     const evil = parseScl('FUNCTION_BLOCK "X"\nBEGIN\n// <script>alert(1)</script>\nEND_FUNCTION_BLOCK');
-    const html = renderBlockHtml(withHighlighting(evil, highlighter), assets);
+    const html = renderBlockHtml(withHighlighting(evil, { scl: highlighter }), assets);
     expect(html).not.toContain('<script>alert');
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
   });

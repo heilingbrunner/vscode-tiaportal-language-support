@@ -1,4 +1,5 @@
 import type { BlockKind, BlockModel, InterfaceMember, InterfaceSection } from '../model/types';
+import { splitNetworks } from './awlNetworks';
 import { Cursor } from './dbCursor';
 import { parseMembers, type RawMember } from './declParser';
 import { buildMember, createContext, ROOT_FLAGS, type UdtResolver } from './memberBuilder';
@@ -117,8 +118,8 @@ function buildSections(kind: BlockKind, groups: SectionGroup[], returnType: stri
     .filter((s) => STANDARD_SECTIONS[kind].includes(s.name) || s.members.length > 0);
 }
 
-/** Parses a TIA SCL source (`FUNCTION_BLOCK`, `FUNCTION` or `ORGANIZATION_BLOCK`) into a view model. */
-export function parseScl(source: string, resolve: UdtResolver = () => undefined): BlockModel {
+/** SCL and STL sources share the block header and the variable sections; only the code part differs. */
+function parseSource(source: string, resolve: UdtResolver, language: 'SCL' | 'STL'): BlockModel {
   const cur = new Cursor(source);
   const keyword = cur.peekWord().toUpperCase();
   if (!Object.hasOwn(BLOCK_KINDS, keyword)) {
@@ -155,12 +156,22 @@ export function parseScl(source: string, resolve: UdtResolver = () => undefined)
     kind,
     name,
     number: '',
-    language: 'SCL',
+    language,
     memoryLayout: header.optimizedAccess ? 'Optimized' : 'Standard',
     title: header.title,
     comment: '',
     sections: buildSections(kind, groups, returnType, resolve),
-    networks: [],
-    code: { lines: code, ...analyzeStructure(code) },
+    networks: language === 'STL' ? splitNetworks(code) : [],
+    code: language === 'SCL' ? { lines: code, ...analyzeStructure(code) } : undefined,
   };
+}
+
+/** Parses a TIA SCL source (`FUNCTION_BLOCK`, `FUNCTION` or `ORGANIZATION_BLOCK`) into a view model. */
+export function parseScl(source: string, resolve: UdtResolver = () => undefined): BlockModel {
+  return parseSource(source, resolve, 'SCL');
+}
+
+/** Parses a TIA STL source (`.awl` / `.stl`): the same block header, followed by `NETWORK` sections. */
+export function parseAwl(source: string, resolve: UdtResolver = () => undefined): BlockModel {
+  return parseSource(source, resolve, 'STL');
 }

@@ -209,6 +209,9 @@ pre.code {
   --c-constant: #0000ff;
   --c-function: #795e26;
   --c-pragma: #808080;
+  --c-instruction: #0000ff;
+  --c-label: #795e26;
+  --c-absolute: #001080;
   display: grid;
   grid-template-columns: minmax(10rem, 18rem) minmax(0, 1fr);
   margin-top: 12px;
@@ -226,6 +229,9 @@ body.vscode-high-contrast .code-view {
   --c-constant: #569cd6;
   --c-function: #dcdcaa;
   --c-pragma: #9a9a9a;
+  --c-instruction: #569cd6;
+  --c-label: #dcdcaa;
+  --c-absolute: #9cdcfe;
 }
 
 .code-view.no-outline {
@@ -323,6 +329,9 @@ body.vscode-high-contrast .code-view {
 .c-constant { color: var(--c-constant); }
 .c-function { color: var(--c-function); }
 .c-pragma { color: var(--c-pragma); }
+.c-instruction { color: var(--c-instruction); }
+.c-label { color: var(--c-label); }
+.c-absolute { color: var(--c-absolute); }
 
 svg.lad {
   display: block;

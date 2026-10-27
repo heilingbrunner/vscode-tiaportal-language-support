@@ -78,6 +78,10 @@ The same view opens TIA data block sources (*Reopen Editor With… > TIA Block V
 
 *Reopen Editor With… > TIA Block View* on an `.scl` file shows the interface table (Input, Output, InOut, Static, Temp, Constant, Return; default values greyed, retain, comments, UDT members expandable) above the code. The code pane has line numbers, syntax highlighting from this extension's SCL grammar, fold markers for `IF`, `CASE`, `FOR`, `WHILE`, `REPEAT`, `REGION` and multi-line comments, and a `REGION` outline on the left that scrolls to (and unfolds) the selected region. If the highlighter cannot be loaded the code is shown as plain text.
 
+### STL sources (`*.awl`, `*.stl`)
+
+The same view opens STL block sources: the interface table above one block per `NETWORK`, each with its title, the comment lines below the title and a numbered, syntax-highlighted listing of the instructions (English or German mnemonics, labels, absolute addresses, block calls). SCL and STL networks inside Openness XML exports are shown the same way.
+
 ## Development
 
 `npm run build` bundles the extension (`src/` → `dist/`), `npm test` runs the unit tests in `tests/` (fixtures in `fixtures/`; every XML under the git-ignored `test/Project` is additionally parsed and laid out when present), `npm run typecheck` runs `tsc`. Press F5 to start an Extension Development Host.

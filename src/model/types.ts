@@ -28,7 +28,9 @@ export interface InterfaceSection {
 export type NetworkBody =
   | { kind: 'empty' }
   | { kind: 'lad'; scene: LadScene }
-  | { kind: 'text'; language: string; lines: string[] };
+  | { kind: 'text'; language: string; lines: string[] }
+  /** SCL or STL source of a network, shown as a numbered code pane (highlighted when `tokens` is set). */
+  | { kind: 'code'; language: string; lines: string[]; tokens?: CodeToken[][] };
 
 export interface NetworkModel {
   index: number;

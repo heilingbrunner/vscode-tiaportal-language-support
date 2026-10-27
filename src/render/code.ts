@@ -25,8 +25,11 @@ function outlineHtml(code: CodeInfo): string {
   return `<nav class="outline" aria-label="Regions">${items}</nav>`;
 }
 
-/** Renders SCL code as a line-numbered pane with fold toggles and a REGION outline. */
-export function renderCode(code: CodeInfo): string {
+/**
+ * Renders code as a line-numbered pane with fold toggles and a REGION outline.
+ * `idPrefix` keeps line ids unique when a page holds several panes (one per network).
+ */
+export function renderCode(code: CodeInfo, idPrefix = ''): string {
   const foldAt = new Map<number, Fold>();
   for (const fold of code.folds) {
     // folds are sorted by start line, outermost first: keep the outermost one per line
@@ -40,7 +43,9 @@ export function renderCode(code: CodeInfo): string {
     const toggle = fold
       ? `<span class="fold" data-from="${fold.from}" data-to="${fold.to}">▾</span>`
       : '<span class="fold none"></span>';
-    return `<div class="cl" id="L${line}" data-line="${line}"><span class="ln">${line}</span>${toggle}<span class="tx">${lineHtml(text, code.tokens?.[i])}</span></div>`;
+    // only the main code pane takes part in folding and the outline (they address lines by number)
+    const lineAttr = idPrefix === '' ? ` data-line="${line}"` : '';
+    return `<div class="cl" id="${idPrefix}L${line}"${lineAttr}><span class="ln">${line}</span>${toggle}<span class="tx">${lineHtml(text, code.tokens?.[i])}</span></div>`;
   });
   const outline = outlineHtml(code);
   return `<section class="code-view${outline ? '' : ' no-outline'}">${outline}<div class="code-pane">${rows.join('')}</div></section>`;

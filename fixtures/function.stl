@@ -1,0 +1,14 @@
+FUNCTION "Demo_FC" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT
+      Freigabe : Bool;
+   END_VAR
+
+BEGIN
+NETWORK
+TITLE = Verknuepfung
+      U     #Freigabe;
+      UN    E      0.1;
+      =     A      4.0;
+END_FUNCTION

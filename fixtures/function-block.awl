@@ -1,0 +1,43 @@
+FUNCTION_BLOCK "Demo_AWL"
+TITLE = Demo statement list
+{ S7_Optimized_Access := 'FALSE' }
+VERSION : 0.1
+   VAR_INPUT
+      Start : Bool;
+      Ist_Valve : "DataTyp_Valve";
+   END_VAR
+
+   VAR_TEMP
+      Index : Int;
+   END_VAR
+
+BEGIN
+NETWORK
+TITLE = Motor control
+// first comment line
+// second comment line
+      A     "Tag_Input_1";    // check input
+      AN    #Start;
+      A(    ;
+      O     I      0.1;
+      O     DB1.DBX0.0;
+      )     ;
+      S     "Tag_Output";
+      =     Q4.1;
+NETWORK
+TITLE = Jumps and calls
+      L     MW10;
+      L     L#-5;
+      >I    ;
+      JC    next;
+      CALL  "FB_Other", "DB_Other"
+      ( Enable := TRUE,
+        Value  := L#100 );
+next: NOP   0;
+      BEA   ;
+NETWORK
+TITLE =
+NETWORK
+TITLE = Last
+      SET   ;
+END_FUNCTION_BLOCK

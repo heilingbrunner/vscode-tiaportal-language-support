@@ -17,6 +17,9 @@
   interface table (greyed defaults, retain, comments, UDT members) above the code, which is shown with
   line numbers, syntax highlighting from the extension's SCL grammar, fold markers for
   `IF`/`CASE`/`FOR`/`WHILE`/`REPEAT`/`REGION`/comments and a clickable `REGION` outline.
+- The TIA Block View also opens **STL sources (`*.awl`, `*.stl`)**: interface table plus one numbered,
+  syntax-highlighted code pane per `NETWORK`, with the network title and comment (English and German
+  mnemonics). SCL and STL networks of Openness XML exports use the same highlighted code pane.
 - Interface row numbers now count only the visible rows and update on expand/collapse; struct and UDT
   rows start collapsed.
 

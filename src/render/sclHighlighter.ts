@@ -2,19 +2,39 @@ import * as oniguruma from 'vscode-oniguruma';
 import * as textmate from 'vscode-textmate';
 import type { BlockModel, CodeToken } from '../model/types';
 
-const SCOPE_NAME = 'source.tia.scl';
+export type HighlightLanguage = 'scl' | 'awl';
+
+const SCOPE_NAMES: Record<HighlightLanguage, string> = {
+  scl: 'source.tia.scl',
+  awl: 'source.tia.awl',
+};
+/**
+ * Lines fed to the grammar before the code: the AWL grammar only recognises instructions after it has
+ * seen `BEGIN`, and a network's lines are tokenized without the block header.
+ */
+const PREAMBLES: Record<HighlightLanguage, readonly string[]> = {
+  scl: [],
+  awl: ['BEGIN'],
+};
 const MAX_LINES = 50_000;
 /** Per-line tokenizing budget in milliseconds; a line that exceeds it is shown unhighlighted. */
 const LINE_TIME_LIMIT_MS = 100;
 
 export interface HighlighterLoaders {
-  readGrammar(): Promise<string>;
+  /** Grammar source for a language; the AWL grammar includes the SCL grammar (comments, strings, symbols). */
+  readGrammar(language: HighlightLanguage): Promise<string>;
   readWasm(): Promise<ArrayBuffer>;
 }
 
 export interface SclHighlighter {
   /** One token list per input line; the tokens of a line always concatenate to the line. */
   tokenize(lines: readonly string[]): CodeToken[][];
+}
+
+/** The highlighters available to a view: `scl` for SCL code, `awl` for STL networks. */
+export interface HighlighterSet {
+  scl?: SclHighlighter;
+  awl?: SclHighlighter;
 }
 
 /** First matching rule wins; scopes are checked from the most specific (last) one. */
@@ -26,12 +46,17 @@ const CLASS_RULES: Array<[prefix: string, cls: string]> = [
   ['keyword.other.pragma', 'c-pragma'],
   ['meta.pragma', 'c-pragma'],
   ['keyword.operator.word', 'c-keyword'],
+  ['keyword.operator.logical', 'c-instruction'],
   ['keyword.operator', 'c-operator'],
   ['keyword.other', 'c-keyword'],
+  ['support.function.instruction', 'c-instruction'],
   ['storage', 'c-type'],
   ['entity.name.type', 'c-type'],
+  ['entity.name.label', 'c-label'],
   ['constant.numeric', 'c-number'],
   ['constant.language', 'c-constant'],
+  ['variable.other.absolute', 'c-absolute'],
+  ['variable.language.register', 'c-absolute'],
   ['variable.other.local', 'c-local'],
   ['variable.other.global', 'c-global'],
   ['variable.parameter', 'c-param'],
@@ -78,8 +103,8 @@ function tokenizeLine(grammar: textmate.IGrammar, line: string, stack: textmate.
 
 let wasmReady: Promise<void> | undefined;
 
-/** Creates a highlighter from the repo's SCL grammar; loaders are injected so it runs in tests and in the extension. */
-export async function createSclHighlighter(loaders: HighlighterLoaders): Promise<SclHighlighter> {
+/** Creates a highlighter from one of the repo's grammars; loaders are injected so it runs in tests and in the extension. */
+export async function createHighlighter(language: HighlightLanguage, loaders: HighlighterLoaders): Promise<SclHighlighter> {
   wasmReady ??= loaders.readWasm().then((data) => oniguruma.loadWASM(data));
   try {
     await wasmReady;
@@ -87,22 +112,29 @@ export async function createSclHighlighter(loaders: HighlighterLoaders): Promise
     wasmReady = undefined;
     throw error;
   }
-  const grammarText = await loaders.readGrammar();
+  const scopeName = SCOPE_NAMES[language];
   const registry = new textmate.Registry({
     onigLib: Promise.resolve({
       createOnigScanner: (patterns: string[]) => new oniguruma.OnigScanner(patterns),
       createOnigString: (text: string) => new oniguruma.OnigString(text),
     }),
-    loadGrammar: async (scopeName: string) =>
-      scopeName === SCOPE_NAME ? textmate.parseRawGrammar(grammarText, 'scl.tmLanguage.json') : null,
+    loadGrammar: async (name: string) => {
+      const requested = (Object.keys(SCOPE_NAMES) as HighlightLanguage[]).find((l) => SCOPE_NAMES[l] === name);
+      return requested
+        ? textmate.parseRawGrammar(await loaders.readGrammar(requested), `${requested}.tmLanguage.json`)
+        : null;
+    },
   });
-  const grammar = await registry.loadGrammar(SCOPE_NAME);
+  const grammar = await registry.loadGrammar(scopeName);
   if (!grammar) {
-    throw new Error('The SCL grammar could not be loaded');
+    throw new Error(`The ${language.toUpperCase()} grammar could not be loaded`);
   }
   return {
     tokenize(lines) {
       let stack: textmate.StateStack = textmate.INITIAL;
+      for (const line of PREAMBLES[language]) {
+        stack = grammar.tokenizeLine(line, stack).ruleStack;
+      }
       return lines.map((line, i) => {
         if (i >= MAX_LINES) {
           return plain(line);
@@ -115,7 +147,20 @@ export async function createSclHighlighter(loaders: HighlighterLoaders): Promise
   };
 }
 
-/** Returns a copy of the model whose code carries highlight tokens. */
-export function withHighlighting(model: BlockModel, highlighter: SclHighlighter): BlockModel {
-  return model.code ? { ...model, code: { ...model.code, tokens: highlighter.tokenize(model.code.lines) } } : model;
+export const createSclHighlighter = (loaders: HighlighterLoaders): Promise<SclHighlighter> => createHighlighter('scl', loaders);
+export const createAwlHighlighter = (loaders: HighlighterLoaders): Promise<SclHighlighter> => createHighlighter('awl', loaders);
+
+/** Returns a copy of the model whose code and code networks carry highlight tokens (SCL or STL as appropriate). */
+export function withHighlighting(model: BlockModel, highlighters: HighlighterSet): BlockModel {
+  const code =
+    model.code && highlighters.scl ? { ...model.code, tokens: highlighters.scl.tokenize(model.code.lines) } : model.code;
+  const networks = model.networks.map((network) => {
+    const { body } = network;
+    if (body.kind !== 'code') {
+      return network;
+    }
+    const highlighter = body.language === 'STL' ? highlighters.awl : highlighters.scl;
+    return highlighter ? { ...network, body: { ...body, tokens: highlighter.tokenize(body.lines) } } : network;
+  });
+  return { ...model, code, networks };
 }

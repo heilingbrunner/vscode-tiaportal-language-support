@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import * as vscode from 'vscode';
 import { parseBlock } from '../parser/blockParser';
 import { parseDataBlock } from '../parser/dbParser';
-import { parseScl } from '../parser/sclParser';
+import { parseAwl, parseScl } from '../parser/sclParser';
 import type { BlockModel } from '../model/types';
 import { renderBlockHtml, renderMessageHtml, type HtmlAssets } from '../render/html';
 import { withHighlighting } from '../render/sclHighlighter';
@@ -12,8 +12,9 @@ import type { UdtIndex } from './udtIndex';
 export const VIEW_TYPE = 'tia.blockView';
 
 const hasExtension = (uri: vscode.Uri, extension: string): boolean => uri.path.toLowerCase().endsWith(extension);
-/** Text sources (`.db`, `.scl`) resolve UDT members from the workspace; XML exports do not. */
-const usesUdts = (uri: vscode.Uri): boolean => hasExtension(uri, '.db') || hasExtension(uri, '.scl');
+const isStlFile = (uri: vscode.Uri): boolean => hasExtension(uri, '.awl') || hasExtension(uri, '.stl');
+/** Text sources (`.db`, `.scl`, `.awl`, `.stl`) resolve UDT members from the workspace; XML exports do not. */
+const usesUdts = (uri: vscode.Uri): boolean => hasExtension(uri, '.db') || hasExtension(uri, '.scl') || isStlFile(uri);
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
 class BlockDocument implements vscode.CustomDocument {
@@ -100,7 +101,9 @@ export class TiaBlockEditorProvider implements vscode.CustomReadonlyEditorProvid
         ? 'TIA data block source'
         : hasExtension(uri, '.scl')
           ? 'TIA SCL source'
-          : 'TIA Openness XML';
+          : isStlFile(uri)
+            ? 'TIA STL source'
+            : 'TIA Openness XML';
       return renderMessageHtml(`The file could not be read as ${what}: ${errorMessage(error)}`, assets);
     }
   }
@@ -113,15 +116,23 @@ export class TiaBlockEditorProvider implements vscode.CustomReadonlyEditorProvid
       const model = parseScl(text, await this.udts.resolver());
       return this.highlight(model);
     }
+    if (isStlFile(uri)) {
+      return this.highlight(parseAwl(text, await this.udts.resolver()));
+    }
     const culture = vscode.workspace.getConfiguration('tiaBlockView').get<string>('culture', '');
-    return parseBlock(text, culture);
+    const model = parseBlock(text, culture);
+    // SCL and STL networks of XML exports are highlighted too
+    return model ? this.highlight(model) : undefined;
   }
 
   /** Adds syntax highlighting; any highlighter problem leaves the code as plain text instead of failing the view. */
   private async highlight(model: BlockModel): Promise<BlockModel> {
+    if (!model.code && !model.networks.some((n) => n.body.kind === 'code')) {
+      return model;
+    }
     try {
-      const highlighter = await this.highlighter.get();
-      return highlighter ? withHighlighting(model, highlighter) : model;
+      const [scl, awl] = await Promise.all([this.highlighter.get('scl'), this.highlighter.get('awl')]);
+      return withHighlighting(model, { scl, awl });
     } catch {
       return model;
     }

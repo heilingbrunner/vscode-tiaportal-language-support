@@ -104,8 +104,8 @@ describe('boxes.xml (synthetic)', () => {
   });
 
   it('renders STL and SCL networks as source text', () => {
-    expect(block?.networks[2]?.body).toEqual({ kind: 'text', language: 'STL', lines: ['A #Start', '= #Run'] });
-    expect(block?.networks[3]?.body).toEqual({ kind: 'text', language: 'SCL', lines: ['#Run := #Start;', '// done'] });
+    expect(block?.networks[2]?.body).toEqual({ kind: 'code', language: 'STL', lines: ['A #Start', '= #Run'] });
+    expect(block?.networks[3]?.body).toEqual({ kind: 'code', language: 'SCL', lines: ['#Run := #Start;', '// done'] });
     expect(block?.networks[4]?.body.kind).toBe('empty');
   });
 });

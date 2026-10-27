@@ -65,6 +65,12 @@
                     },
                     {
                         "filenamePattern": "*.scl"
+                    },
+                    {
+                        "filenamePattern": "*.awl"
+                    },
+                    {
+                        "filenamePattern": "*.stl"
                     }
                 ],
                 "priority": "option"
@@ -80,14 +86,14 @@
             "editor/title": [
                 {
                     "command": "tia.openBlockView",
-                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .scl",
+                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl",
                     "group": "navigation"
                 }
             ],
             "explorer/context": [
                 {
                     "command": "tia.openBlockView",
-                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .scl",
+                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl",
                     "group": "navigation"
                 }
             ]

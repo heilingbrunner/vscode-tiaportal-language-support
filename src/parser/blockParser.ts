@@ -26,9 +26,9 @@ function parseBody(source: XNode | undefined): NetworkBody {
       return net.parts.size === 0 ? { kind: 'empty' } : { kind: 'lad', scene: layoutLad(net) };
     }
     case 'StatementList':
-      return { kind: 'text', language: 'STL', lines: renderStatementList(source) };
+      return { kind: 'code', language: 'STL', lines: renderStatementList(source) };
     case 'StructuredText':
-      return { kind: 'text', language: 'SCL', lines: renderStructuredText(source) };
+      return { kind: 'code', language: 'SCL', lines: renderStructuredText(source) };
     default:
       return { kind: 'empty' };
   }
