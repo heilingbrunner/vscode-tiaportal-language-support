@@ -2,6 +2,8 @@
 
 Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 
+![Screenshot of TIA Portal Language Support](https://github.com/heilingbrunner/vscode-tiaportal-language-support/assets/screenshot-1.png)
+
 ## Languages
 
 | Language                                 | Extensions     | Scope name       |
