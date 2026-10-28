@@ -2,7 +2,7 @@
 
 Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 
-![Screenshot of TIA Portal Language Support](https://github.com/heilingbrunner/vscode-tiaportal-language-support/blob/main/assets/screenshot-1.png)
+![Screenshot of TIA Portal Language Support](https://github.com/heilingbrunner/vscode-tiaportal-language-support/blob/main/assets/screenshot-1.png?raw=true)
 
 ## Languages
 
