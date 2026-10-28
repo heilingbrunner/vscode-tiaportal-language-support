@@ -168,7 +168,7 @@ function titleBlock(model: BlockModel): string {
   return `<section class="block-title"><h2><span class="label">Block title:</span> ${escapeHtml(model.title)}</h2>${comment}</section>`;
 }
 
-/** Renders the whole block view (interface table, block title, networks) as an HTML document. */
+/** Renders the whole viewer page (interface table, block title, networks) as an HTML document. */
 export function renderBlockHtml(model: BlockModel, assets: HtmlAssets): string {
   const csp =
     `default-src 'none'; style-src ${assets.cspSource}; script-src 'nonce-${assets.nonce}'; img-src ${assets.cspSource} data:;`;
@@ -199,6 +199,6 @@ export function renderMessageHtml(message: string, assets: HtmlAssets): string {
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${csp}">
-<link rel="stylesheet" href="${assets.styleUri}"><title>TIA Block View</title></head>
+<link rel="stylesheet" href="${assets.styleUri}"><title>TIA Viewer</title></head>
 <body><p class="message">${escapeHtml(message)}</p></body></html>`;
 }

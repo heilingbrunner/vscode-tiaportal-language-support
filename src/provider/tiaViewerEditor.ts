@@ -10,7 +10,7 @@ import { withHighlighting } from '../render/sclHighlighter';
 import type { HighlighterService } from './highlighterService';
 import type { UdtIndex } from './udtIndex';
 
-export const VIEW_TYPE = 'tia.blockView';
+export const VIEW_TYPE = 'tia.viewer';
 
 const hasExtension = (uri: vscode.Uri, extension: string): boolean => uri.path.toLowerCase().endsWith(extension);
 const isStlFile = (uri: vscode.Uri): boolean => hasExtension(uri, '.awl') || hasExtension(uri, '.stl');
@@ -32,7 +32,7 @@ function errorMessage(error: unknown): string {
 }
 
 /** Read-only custom editor that shows a TIA Openness block export as a TIA-style view. */
-export class TiaBlockEditorProvider implements vscode.CustomReadonlyEditorProvider<BlockDocument> {
+export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvider<BlockDocument> {
   constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly udts: UdtIndex,
@@ -90,7 +90,7 @@ export class TiaBlockEditorProvider implements vscode.CustomReadonlyEditorProvid
     try {
       const bytes = await vscode.workspace.fs.readFile(uri);
       if (bytes.byteLength > MAX_FILE_BYTES) {
-        return renderMessageHtml('This file is too large for the TIA block view (limit: 50 MB).', assets);
+        return renderMessageHtml('This file is too large for the TIA viewer (limit: 50 MB).', assets);
       }
       const text = new TextDecoder('utf-8').decode(bytes);
       const model = await this.parse(uri, text);
@@ -126,7 +126,7 @@ export class TiaBlockEditorProvider implements vscode.CustomReadonlyEditorProvid
     if (isStlFile(uri)) {
       return this.highlight(parseAwl(text, await this.udts.resolver()));
     }
-    const culture = vscode.workspace.getConfiguration('tiaBlockView').get<string>('culture', '');
+    const culture = vscode.workspace.getConfiguration('tiaViewer').get<string>('culture', '');
     const model = parseBlock(text, culture);
     // SCL and STL networks of XML exports are highlighted too
     return model ? this.highlight(model) : undefined;

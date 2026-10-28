@@ -36,7 +36,7 @@ export class HighlighterService implements vscode.Disposable {
         },
       });
     } catch (error: unknown) {
-      this.log ??= vscode.window.createOutputChannel('TIA Block View');
+      this.log ??= vscode.window.createOutputChannel('TIA Viewer');
       this.log.appendLine(
         `${language.toUpperCase()} syntax highlighting is unavailable: ${error instanceof Error ? error.message : String(error)}`,
       );

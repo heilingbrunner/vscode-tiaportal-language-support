@@ -61,28 +61,28 @@ PLC data types (`TYPE "Name"` … `END_TYPE`).
 - The UDT grammar is the SCL grammar: `TYPE` header, `TITLE`, `VERSION`, nested `STRUCT … END_STRUCT`, member attribute pragmas, quoted UDT references, `Array[a..b] of …`, `String[n]` and comments.
 - Initial values in declarations: plain and typed literals (`:= 1.5`, `:= T#2s`, `:= BYTE#16#FF`) and aggregate initializers (`[(1, ()), (2, ())]`, `[8(1.0)]`).
 
-## TIA Block View (XML)
+## TIA Viewer (XML)
 
 A read-only viewer for blocks exported from TIA Portal as Openness XML (FB, FC, OB). It shows the interface table, block and network titles/comments and the networks:
 
 - **LAD** is drawn as a ladder diagram: contacts (incl. negated and edge), coils (`S`, `R`), OR branches, FB/FC calls with instance and parameters, timers, comparators, math and `Move`. Parts without a dedicated symbol are drawn as a generic box.
 - **SCL** and **STL** networks are shown as source text.
 
-Open an `.xml` file with *Reopen Editor With… > TIA Block View*, or run *TIA: Open Block View to the Side*. The setting `tiaBlockView.culture` (for example `de-DE`) selects the language of titles and comments.
+Open an `.xml` file with *Reopen Editor With… > TIA Viewer*, or run *TIA: Open Viewer to the Side*. The setting `tiaViewer.culture` (for example `de-DE`) selects the language of titles and comments.
 
 Callee block numbers (`%FB1`, `%DB43`) are not part of the export and are not shown.
 
 ### Data blocks (`*.db`)
 
-The same view opens TIA data block sources (*Reopen Editor With… > TIA Block View* on a `.db` file): a numbered table with name, data type, start value, retain, accessible/writable/visible/setpoint flags and comment. Start values that are only the type default are greyed, values assigned in the `BEGIN` section are applied, and structs, arrays and UDT members can be expanded. UDTs are looked up in the `*.udt` files of the workspace; a type without a `.udt` file stays a plain row. Instance data blocks show the function block they belong to.
+The same view opens TIA data block sources (*Reopen Editor With… > TIA Viewer* on a `.db` file): a numbered table with name, data type, start value, retain, accessible/writable/visible/setpoint flags and comment. Start values that are only the type default are greyed, values assigned in the `BEGIN` section are applied, and structs, arrays and UDT members can be expanded. UDTs are looked up in the `*.udt` files of the workspace; a type without a `.udt` file stays a plain row. Instance data blocks show the function block they belong to.
 
 ### User-defined types (`*.udt`)
 
-*Reopen Editor With… > TIA Block View* on a `.udt` file shows the table of TIA's type editor: name, data type, default value (type defaults greyed), accessible/writable/visible/setpoint flags, supervision and comment, without sections and without a retain column. Structs, arrays and referenced UDTs can be expanded; referenced types are looked up in the `*.udt` files of the workspace, and the view refreshes when one of them changes.
+*Reopen Editor With… > TIA Viewer* on a `.udt` file shows the table of TIA's type editor: name, data type, default value (type defaults greyed), accessible/writable/visible/setpoint flags, supervision and comment, without sections and without a retain column. Structs, arrays and referenced UDTs can be expanded; referenced types are looked up in the `*.udt` files of the workspace, and the view refreshes when one of them changes.
 
 ### SCL sources (`*.scl`)
 
-*Reopen Editor With… > TIA Block View* on an `.scl` file shows the interface table (Input, Output, InOut, Static, Temp, Constant, Return; default values greyed, retain, comments, UDT members expandable) above the code. The code pane has line numbers, syntax highlighting from this extension's SCL grammar, fold markers for `IF`, `CASE`, `FOR`, `WHILE`, `REPEAT`, `REGION` and multi-line comments, and a `REGION` outline on the left that scrolls to (and unfolds) the selected region. If the highlighter cannot be loaded the code is shown as plain text.
+*Reopen Editor With… > TIA Viewer* on an `.scl` file shows the interface table (Input, Output, InOut, Static, Temp, Constant, Return; default values greyed, retain, comments, UDT members expandable) above the code. The code pane has line numbers, syntax highlighting from this extension's SCL grammar, fold markers for `IF`, `CASE`, `FOR`, `WHILE`, `REPEAT`, `REGION` and multi-line comments, and a `REGION` outline on the left that scrolls to (and unfolds) the selected region. If the highlighter cannot be loaded the code is shown as plain text.
 
 ### STL sources (`*.awl`, `*.stl`)
 

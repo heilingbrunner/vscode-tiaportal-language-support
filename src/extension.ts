@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { HighlighterService } from './provider/highlighterService';
-import { TiaBlockEditorProvider, VIEW_TYPE } from './provider/tiaBlockEditor';
+import { TiaViewerEditorProvider, VIEW_TYPE } from './provider/tiaViewerEditor';
 import { UdtIndex } from './provider/udtIndex';
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -9,10 +9,10 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     udts,
     highlighter,
-    vscode.window.registerCustomEditorProvider(VIEW_TYPE, new TiaBlockEditorProvider(context.extensionUri, udts, highlighter), {
+    vscode.window.registerCustomEditorProvider(VIEW_TYPE, new TiaViewerEditorProvider(context.extensionUri, udts, highlighter), {
       supportsMultipleEditorsPerDocument: true,
     }),
-    vscode.commands.registerCommand('tia.openBlockView', async (resource?: vscode.Uri) => {
+    vscode.commands.registerCommand('tia.openViewer', async (resource?: vscode.Uri) => {
       const uri = resource ?? vscode.window.activeTextEditor?.document.uri;
       if (!uri) {
         void vscode.window.showInformationMessage('Open a TIA Openness XML file first.');

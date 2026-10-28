@@ -54,8 +54,8 @@
     "contributes": {
         "customEditors": [
             {
-                "viewType": "tia.blockView",
-                "displayName": "TIA Block View",
+                "viewType": "tia.viewer",
+                "displayName": "TIA Viewer",
                 "selector": [
                     {
                         "filenamePattern": "*.xml"
@@ -81,33 +81,33 @@
         ],
         "commands": [
             {
-                "command": "tia.openBlockView",
-                "title": "TIA: Open Block View to the Side"
+                "command": "tia.openViewer",
+                "title": "TIA: Open Viewer to the Side"
             }
         ],
         "menus": {
             "editor/title": [
                 {
-                    "command": "tia.openBlockView",
+                    "command": "tia.openViewer",
                     "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl",
                     "group": "navigation"
                 }
             ],
             "explorer/context": [
                 {
-                    "command": "tia.openBlockView",
+                    "command": "tia.openViewer",
                     "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl",
                     "group": "navigation"
                 }
             ]
         },
         "configuration": {
-            "title": "TIA Block View",
+            "title": "TIA Viewer",
             "properties": {
-                "tiaBlockView.culture": {
+                "tiaViewer.culture": {
                     "type": "string",
                     "default": "",
-                    "description": "Culture used for titles and comments in the block view (for example de-DE). Empty = first available text."
+                    "description": "Culture used for titles and comments in the viewer (for example de-DE). Empty = first available text."
                 }
             }
         },
