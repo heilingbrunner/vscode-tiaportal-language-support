@@ -64,6 +64,9 @@
                         "filenamePattern": "*.db"
                     },
                     {
+                        "filenamePattern": "*.udt"
+                    },
+                    {
                         "filenamePattern": "*.scl"
                     },
                     {
@@ -86,14 +89,14 @@
             "editor/title": [
                 {
                     "command": "tia.openBlockView",
-                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl",
+                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl",
                     "group": "navigation"
                 }
             ],
             "explorer/context": [
                 {
                     "command": "tia.openBlockView",
-                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl",
+                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl",
                     "group": "navigation"
                 }
             ]

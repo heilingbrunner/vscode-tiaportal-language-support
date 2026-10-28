@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { parseBlock } from '../parser/blockParser';
 import { parseDataBlock } from '../parser/dbParser';
 import { parseAwl, parseScl } from '../parser/sclParser';
+import { parseUdtModel } from '../parser/udtParser';
 import type { BlockModel } from '../model/types';
 import { renderBlockHtml, renderMessageHtml, type HtmlAssets } from '../render/html';
 import { withHighlighting } from '../render/sclHighlighter';
@@ -13,8 +14,9 @@ export const VIEW_TYPE = 'tia.blockView';
 
 const hasExtension = (uri: vscode.Uri, extension: string): boolean => uri.path.toLowerCase().endsWith(extension);
 const isStlFile = (uri: vscode.Uri): boolean => hasExtension(uri, '.awl') || hasExtension(uri, '.stl');
-/** Text sources (`.db`, `.scl`, `.awl`, `.stl`) resolve UDT members from the workspace; XML exports do not. */
-const usesUdts = (uri: vscode.Uri): boolean => hasExtension(uri, '.db') || hasExtension(uri, '.scl') || isStlFile(uri);
+/** Text sources (`.db`, `.udt`, `.scl`, `.awl`, `.stl`) resolve UDT members from the workspace; XML exports do not. */
+const usesUdts = (uri: vscode.Uri): boolean =>
+  hasExtension(uri, '.db') || hasExtension(uri, '.udt') || hasExtension(uri, '.scl') || isStlFile(uri);
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
 class BlockDocument implements vscode.CustomDocument {
@@ -99,11 +101,13 @@ export class TiaBlockEditorProvider implements vscode.CustomReadonlyEditorProvid
     } catch (error: unknown) {
       const what = hasExtension(uri, '.db')
         ? 'TIA data block source'
-        : hasExtension(uri, '.scl')
-          ? 'TIA SCL source'
-          : isStlFile(uri)
-            ? 'TIA STL source'
-            : 'TIA Openness XML';
+        : hasExtension(uri, '.udt')
+          ? 'TIA UDT source'
+          : hasExtension(uri, '.scl')
+            ? 'TIA SCL source'
+            : isStlFile(uri)
+              ? 'TIA STL source'
+              : 'TIA Openness XML';
       return renderMessageHtml(`The file could not be read as ${what}: ${errorMessage(error)}`, assets);
     }
   }
@@ -111,6 +115,9 @@ export class TiaBlockEditorProvider implements vscode.CustomReadonlyEditorProvid
   private async parse(uri: vscode.Uri, text: string): Promise<BlockModel | undefined> {
     if (hasExtension(uri, '.db')) {
       return parseDataBlock(text, await this.udts.resolver());
+    }
+    if (hasExtension(uri, '.udt')) {
+      return parseUdtModel(text, await this.udts.resolver());
     }
     if (hasExtension(uri, '.scl')) {
       const model = parseScl(text, await this.udts.resolver());

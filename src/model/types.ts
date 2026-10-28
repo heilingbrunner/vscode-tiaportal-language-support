@@ -1,6 +1,6 @@
 import type { LadScene } from '../layout/scene';
 
-export type BlockKind = 'FB' | 'FC' | 'OB' | 'DB';
+export type BlockKind = 'FB' | 'FC' | 'OB' | 'DB' | 'UDT';
 
 export interface InterfaceMember {
   name: string;
@@ -77,10 +77,17 @@ export interface DataBlockInfo {
   instanceOf: string;
 }
 
+/** Header data of a user-defined type (`kind === 'UDT'`). */
+export interface TypeInfo {
+  version: string;
+}
+
 export interface BlockModel {
   kind: BlockKind;
   /** Present for `kind === 'DB'`. */
   dataBlock?: DataBlockInfo;
+  /** Present for `kind === 'UDT'`. */
+  typeInfo?: TypeInfo;
   /** Present for blocks read from SCL source. */
   code?: CodeInfo;
   name: string;

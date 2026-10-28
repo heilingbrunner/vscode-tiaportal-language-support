@@ -23,6 +23,7 @@ const STANDARD_SECTIONS: Record<BlockKind, string[]> = {
   FC: ['Input', 'Output', 'InOut', 'Temp', 'Constant', 'Return'],
   OB: ['Input', 'Temp', 'Constant'],
   DB: [],
+  UDT: [],
 };
 const RETAIN_SECTIONS = new Set(['Input', 'Output', 'InOut', 'Static']);
 const END_KEYWORD = /^\s*END_(?:FUNCTION_BLOCK|FUNCTION|ORGANIZATION_BLOCK)\b/;

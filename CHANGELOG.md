@@ -13,6 +13,9 @@
   flags and comments; structs, arrays and UDT members are expandable. UDT members are resolved from
   the `*.udt` files of the workspace. Instance data blocks show the function block they belong to.
   Optimized (`VAR`), non-optimized (`STRUCT`) and single-array data blocks are supported.
+- The TIA Block View also opens **user-defined type sources (`*.udt`)**: the table of TIA's type editor
+  (name, data type, default value, flags, supervision, comment; no sections, no retain column) with
+  expandable structs, arrays and referenced UDTs, refreshed when a referenced `*.udt` changes.
 - The TIA Block View also opens **SCL sources (`*.scl`)** (function blocks, functions, organization blocks):
   interface table (greyed defaults, retain, comments, UDT members) above the code, which is shown with
   line numbers, syntax highlighting from the extension's SCL grammar, fold markers for

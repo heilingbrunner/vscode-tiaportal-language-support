@@ -17,10 +17,16 @@ const FLAG_COLUMNS = [
 ];
 const FB_COLUMNS = ['#', 'Name', 'Data type', 'Default value', 'Retain', ...FLAG_COLUMNS, 'Comment'];
 const DB_COLUMNS = ['#', 'Name', 'Data type', 'Start value', 'Retain', ...FLAG_COLUMNS, 'Supervision', 'Comment'];
+/** A user-defined type has default values, but neither a retain setting nor sections. */
+const UDT_COLUMNS = ['#', 'Name', 'Data type', 'Default value', ...FLAG_COLUMNS, 'Supervision', 'Comment'];
+
+type TableKind = 'block' | 'db' | 'udt';
 
 /** Row numbering and layout options shared by all rows of one interface table. */
 interface TableState {
+  /** Data blocks and types: top level rows are shown and there is a Supervision column. */
   db: boolean;
+  udt: boolean;
   columns: number;
   row: number;
 }
@@ -43,9 +49,11 @@ function memberRows(
   const caretClass = hasChildren ? 'caret collapsed' : 'caret';
   const caret = hasChildren ? `<span class="${caretClass}" data-toggle="${id}">▾</span>` : '<span class="caret none"></span>';
   const start = member.startIsDefault ? ' class="start default"' : ' class="start"';
-  const retain = state.db
-    ? check(member.retainChecked ?? false, flags)
-    : `<td>${escapeHtml(member.retain)}</td>`;
+  const retain = state.udt
+    ? ''
+    : state.db
+      ? check(member.retainChecked ?? false, flags)
+      : `<td>${escapeHtml(member.retain)}</td>`;
   const supervision = state.db ? '<td></td>' : '';
   // TIA numbers the visible rows only; rows that start hidden are numbered by viewer.js when they are shown
   if (!hidden) {
@@ -66,6 +74,10 @@ function memberRows(
 function sectionRows(section: InterfaceSection, index: number, state: TableState): string {
   const id = `s${index}`;
   const flags = !['Temp', 'Constant', 'Return'].includes(section.name);
+  if (state.udt) {
+    // TIA's type editor lists the members directly, without a section row
+    return section.members.map((m, i) => memberRows(m, `${id}.${i}`, '', 1, flags, state)).join('');
+  }
   state.row++;
   const caretClass = state.db ? 'caret' : 'caret collapsed';
   const rowClass = section.members.length === 0 ? 'section empty' : 'section';
@@ -75,9 +87,9 @@ function sectionRows(section: InterfaceSection, index: number, state: TableState
   return header + section.members.map((m, i) => memberRows(m, `${id}.${i}`, id, 1, flags, state)).join('');
 }
 
-function interfaceTable(sections: InterfaceSection[], db: boolean): string {
-  const columns = db ? DB_COLUMNS : FB_COLUMNS;
-  const state: TableState = { db, columns: columns.length, row: 0 };
+function interfaceTable(sections: InterfaceSection[], kind: TableKind): string {
+  const columns = kind === 'db' ? DB_COLUMNS : kind === 'udt' ? UDT_COLUMNS : FB_COLUMNS;
+  const state: TableState = { db: kind !== 'block', udt: kind === 'udt', columns: columns.length, row: 0 };
   const head = columns.map((c) => `<th>${escapeHtml(c)}</th>`).join('');
   return (
     `<table class="interface"><thead><tr>${head}</tr></thead><tbody>` +
@@ -112,6 +124,10 @@ function networkSection(network: NetworkModel): string {
 }
 
 function headerProps(model: BlockModel): string {
+  if (model.kind === 'UDT') {
+    const version = model.typeInfo?.version ?? '';
+    return version === '' ? '' : `<span>Version: ${escapeHtml(version)}</span>`;
+  }
   const info = model.dataBlock;
   if (model.kind !== 'DB' || !info) {
     return `<span>Language: ${escapeHtml(model.language)}</span><span>Memory: ${escapeHtml(model.memoryLayout)}</span>`;
@@ -136,11 +152,16 @@ function interfaceBlock(model: BlockModel): string {
   if (model.kind === 'DB' && model.sections.length === 0) {
     return '<p class="notice">This data block declares no variables.</p>';
   }
-  return interfaceTable(model.sections, model.kind === 'DB');
+  if (model.kind === 'UDT') {
+    return model.sections.every((s) => s.members.length === 0)
+      ? '<p class="notice">This data type declares no members.</p>'
+      : interfaceTable(model.sections, 'udt');
+  }
+  return interfaceTable(model.sections, model.kind === 'DB' ? 'db' : 'block');
 }
 
 function titleBlock(model: BlockModel): string {
-  if ((model.kind === 'DB' || model.code) && model.title === '') {
+  if ((model.kind === 'DB' || model.kind === 'UDT' || model.code) && model.title === '') {
     return '';
   }
   const comment = model.comment ? `<div class="comment">${escapeHtml(model.comment)}</div>` : '';

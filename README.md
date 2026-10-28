@@ -76,6 +76,10 @@ Callee block numbers (`%FB1`, `%DB43`) are not part of the export and are not sh
 
 The same view opens TIA data block sources (*Reopen Editor With… > TIA Block View* on a `.db` file): a numbered table with name, data type, start value, retain, accessible/writable/visible/setpoint flags and comment. Start values that are only the type default are greyed, values assigned in the `BEGIN` section are applied, and structs, arrays and UDT members can be expanded. UDTs are looked up in the `*.udt` files of the workspace; a type without a `.udt` file stays a plain row. Instance data blocks show the function block they belong to.
 
+### User-defined types (`*.udt`)
+
+*Reopen Editor With… > TIA Block View* on a `.udt` file shows the table of TIA's type editor: name, data type, default value (type defaults greyed), accessible/writable/visible/setpoint flags, supervision and comment, without sections and without a retain column. Structs, arrays and referenced UDTs can be expanded; referenced types are looked up in the `*.udt` files of the workspace, and the view refreshes when one of them changes.
+
 ### SCL sources (`*.scl`)
 
 *Reopen Editor With… > TIA Block View* on an `.scl` file shows the interface table (Input, Output, InOut, Static, Temp, Constant, Return; default values greyed, retain, comments, UDT members expandable) above the code. The code pane has line numbers, syntax highlighting from this extension's SCL grammar, fold markers for `IF`, `CASE`, `FOR`, `WHILE`, `REPEAT`, `REGION` and multi-line comments, and a `REGION` outline on the left that scrolls to (and unfolds) the selected region. If the highlighter cannot be loaded the code is shown as plain text.
