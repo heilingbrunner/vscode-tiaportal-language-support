@@ -191,6 +191,288 @@
           <ProgrammingLanguage>SCL</ProgrammingLanguage>
         </AttributeList>
       </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="B" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+              <Parts>
+                <Access Scope="LocalVariable" UId="21"><Symbol><Component Name="Station_Handling" /><Component Name="Request_Open_Cover" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="22"><Symbol><Component Name="Station_Handling" /><Component Name="Request_Close_Cover" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="23"><Symbol><Component Name="Command_Output" /><Component Name="Open_Lid_Station_Right" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="24"><Symbol><Component Name="Station_Handling" /><Component Name="Request_Local_Mode" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="25"><Symbol><Component Name="Command_Output" /><Component Name="Open_Lid_Station_Left" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="26"><Symbol><Component Name="Command_Output" /><Component Name="Close_Lid_Station_Right" /></Symbol></Access>
+                <Part Name="Contact" UId="31" />
+                <Part Name="Contact" UId="32" />
+                <Part Name="O" UId="33"><TemplateValue Name="Card" Type="Cardinality">2</TemplateValue></Part>
+                <Part Name="Coil" UId="34" />
+                <Part Name="Contact" UId="35" />
+                <Part Name="Contact" UId="36"><Negated Name="operand" /></Part>
+                <Part Name="Coil" UId="37" />
+              </Parts>
+              <Wires>
+                <Wire UId="40"><Powerrail /><NameCon UId="31" Name="in" /><NameCon UId="32" Name="in" /><NameCon UId="35" Name="in" /></Wire>
+                <Wire UId="41"><IdentCon UId="21" /><NameCon UId="31" Name="operand" /></Wire>
+                <Wire UId="42"><IdentCon UId="22" /><NameCon UId="32" Name="operand" /></Wire>
+                <Wire UId="43"><NameCon UId="31" Name="out" /><NameCon UId="33" Name="in1" /></Wire>
+                <Wire UId="44"><NameCon UId="32" Name="out" /><NameCon UId="33" Name="in2" /></Wire>
+                <Wire UId="45"><NameCon UId="33" Name="out" /><NameCon UId="34" Name="in" /></Wire>
+                <Wire UId="46"><IdentCon UId="23" /><NameCon UId="34" Name="operand" /></Wire>
+                <Wire UId="47"><IdentCon UId="24" /><NameCon UId="35" Name="operand" /></Wire>
+                <Wire UId="48"><NameCon UId="35" Name="out" /><NameCon UId="36" Name="in" /></Wire>
+                <Wire UId="49"><IdentCon UId="25" /><NameCon UId="36" Name="operand" /></Wire>
+                <Wire UId="50"><NameCon UId="36" Name="out" /><NameCon UId="37" Name="in" /></Wire>
+                <Wire UId="51"><IdentCon UId="26" /><NameCon UId="37" Name="operand" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="C" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+              <Parts>
+                <Access Scope="LocalVariable" UId="21"><Symbol><Component Name="A" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="22"><Symbol><Component Name="D" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="23"><Symbol><Component Name="E" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="24"><Symbol><Component Name="Station_Handling" /><Component Name="Request_Open_Cover_Command_Long" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="25"><Symbol><Component Name="Q" /></Symbol></Access>
+                <Part Name="Contact" UId="31" />
+                <Part Name="Contact" UId="32" />
+                <Part Name="Contact" UId="33" />
+                <Part Name="Contact" UId="34" />
+                <Part Name="O" UId="35"><TemplateValue Name="Card" Type="Cardinality">3</TemplateValue></Part>
+                <Part Name="Coil" UId="36" />
+              </Parts>
+              <Wires>
+                <Wire UId="60"><Powerrail /><NameCon UId="31" Name="in" /><NameCon UId="32" Name="in" /><NameCon UId="33" Name="in" /></Wire>
+                <Wire UId="61"><IdentCon UId="21" /><NameCon UId="31" Name="operand" /></Wire>
+                <Wire UId="62"><IdentCon UId="22" /><NameCon UId="32" Name="operand" /></Wire>
+                <Wire UId="63"><IdentCon UId="23" /><NameCon UId="33" Name="operand" /></Wire>
+                <Wire UId="64"><IdentCon UId="24" /><NameCon UId="34" Name="operand" /></Wire>
+                <Wire UId="65"><NameCon UId="31" Name="out" /><NameCon UId="35" Name="in1" /></Wire>
+                <Wire UId="66"><NameCon UId="32" Name="out" /><NameCon UId="35" Name="in2" /></Wire>
+                <Wire UId="67"><NameCon UId="33" Name="out" /><NameCon UId="34" Name="in" /></Wire>
+                <Wire UId="68"><NameCon UId="34" Name="out" /><NameCon UId="35" Name="in3" /></Wire>
+                <Wire UId="69"><NameCon UId="35" Name="out" /><NameCon UId="36" Name="in" /></Wire>
+                <Wire UId="70"><IdentCon UId="25" /><NameCon UId="36" Name="operand" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="D" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+              <Parts>
+                <Access Scope="LocalVariable" UId="21"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Station_Handling" /><Component Name="Request_Open_Cover_One" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="22"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Station_Handling" /><Component Name="Request_Open_Cover_Two" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="23"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Station_Handling" /><Component Name="Request_Open_Cover_Three" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="24"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Station_Handling" /><Component Name="Status_Output_Coil_One" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="25"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Alarm_Handling" /><Component Name="Timeout_Extract_Four" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="26"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Station_Handling" /><Component Name="Status_Monitor_Coil" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="27"><Symbol><Component Name="Alarm_Handling" /><Component Name="Timeout_Five" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="28"><Symbol><Component Name="Alarm_Handling" /><Component Name="Timeout_Six" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="29"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Station_Handling" /><Component Name="Status_Error_Coil_Two" /></Symbol></Access>
+                <Part Name="Contact" UId="53"><Negated Name="operand" /></Part>
+                <Part Name="Contact" UId="54" />
+                <Part Name="Contact" UId="55" />
+                <Part Name="O" UId="56"><TemplateValue Name="Card" Type="Cardinality">2</TemplateValue></Part>
+                <Part Name="Coil" UId="57" />
+                <Part Name="Contact" UId="58" />
+                <Part Name="Coil" UId="59" />
+                <Part Name="Contact" UId="60" />
+                <Part Name="Contact" UId="61" />
+                <Part Name="O" UId="62"><TemplateValue Name="Card" Type="Cardinality">2</TemplateValue></Part>
+                <Part Name="Coil" UId="63" />
+              </Parts>
+              <Wires>
+                <Wire UId="80"><Powerrail /><NameCon UId="53" Name="in" /><NameCon UId="58" Name="in" /><NameCon UId="60" Name="in" /><NameCon UId="61" Name="in" /></Wire>
+                <Wire UId="81"><IdentCon UId="21" /><NameCon UId="53" Name="operand" /></Wire>
+                <Wire UId="82"><NameCon UId="53" Name="out" /><NameCon UId="54" Name="in" /><NameCon UId="55" Name="in" /></Wire>
+                <Wire UId="83"><IdentCon UId="22" /><NameCon UId="54" Name="operand" /></Wire>
+                <Wire UId="84"><NameCon UId="54" Name="out" /><NameCon UId="56" Name="in1" /></Wire>
+                <Wire UId="85"><IdentCon UId="23" /><NameCon UId="55" Name="operand" /></Wire>
+                <Wire UId="86"><NameCon UId="55" Name="out" /><NameCon UId="56" Name="in2" /></Wire>
+                <Wire UId="87"><NameCon UId="56" Name="out" /><NameCon UId="57" Name="in" /></Wire>
+                <Wire UId="88"><IdentCon UId="24" /><NameCon UId="57" Name="operand" /></Wire>
+                <Wire UId="89"><IdentCon UId="25" /><NameCon UId="58" Name="operand" /></Wire>
+                <Wire UId="90"><NameCon UId="58" Name="out" /><NameCon UId="59" Name="in" /></Wire>
+                <Wire UId="91"><IdentCon UId="26" /><NameCon UId="59" Name="operand" /></Wire>
+                <Wire UId="92"><IdentCon UId="27" /><NameCon UId="60" Name="operand" /></Wire>
+                <Wire UId="93"><NameCon UId="60" Name="out" /><NameCon UId="62" Name="in1" /></Wire>
+                <Wire UId="94"><IdentCon UId="28" /><NameCon UId="61" Name="operand" /></Wire>
+                <Wire UId="95"><NameCon UId="61" Name="out" /><NameCon UId="62" Name="in2" /></Wire>
+                <Wire UId="96"><NameCon UId="62" Name="out" /><NameCon UId="63" Name="in" /></Wire>
+                <Wire UId="97"><IdentCon UId="29" /><NameCon UId="63" Name="operand" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="E" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+              <Parts>
+                <Access Scope="LocalVariable" UId="21"><Symbol><Component Name="A" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="22"><Symbol><Component Name="B" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="23"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Station_Handling" /><Component Name="Request_Open_Cover_Command" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="24"><Symbol><Component Name="Q1" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="25"><Symbol><Component Name="Q2" /></Symbol></Access>
+                <Part Name="Contact" UId="31" />
+                <Part Name="Contact" UId="32" />
+                <Part Name="Contact" UId="33" />
+                <Part Name="Coil" UId="34" />
+                <Part Name="Coil" UId="35" />
+              </Parts>
+              <Wires>
+                <Wire UId="40"><Powerrail /><NameCon UId="31" Name="in" /></Wire>
+                <Wire UId="41"><IdentCon UId="21" /><NameCon UId="31" Name="operand" /></Wire>
+                <Wire UId="42"><NameCon UId="31" Name="out" /><NameCon UId="32" Name="in" /><NameCon UId="33" Name="in" /></Wire>
+                <Wire UId="43"><IdentCon UId="22" /><NameCon UId="32" Name="operand" /></Wire>
+                <Wire UId="44"><IdentCon UId="23" /><NameCon UId="33" Name="operand" /></Wire>
+                <Wire UId="45"><NameCon UId="32" Name="out" /><NameCon UId="34" Name="in" /></Wire>
+                <Wire UId="46"><NameCon UId="33" Name="out" /><NameCon UId="35" Name="in" /></Wire>
+                <Wire UId="47"><IdentCon UId="24" /><NameCon UId="34" Name="operand" /></Wire>
+                <Wire UId="48"><IdentCon UId="25" /><NameCon UId="35" Name="operand" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="F" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+              <Parts>
+                <Access Scope="LocalVariable" UId="21"><Symbol><Component Name="P" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="22"><Symbol><Component Name="Q" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="23"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Station_Handling" /><Component Name="Request_Open_Cover_Command" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="24"><Symbol><Component Name="Out" /></Symbol></Access>
+                <Part Name="Contact" UId="31" />
+                <Part Name="Contact" UId="32" />
+                <Part Name="Contact" UId="33" />
+                <Part Name="O" UId="34"><TemplateValue Name="Card" Type="Cardinality">2</TemplateValue></Part>
+                <Part Name="Coil" UId="35" />
+              </Parts>
+              <Wires>
+                <Wire UId="40"><Powerrail /><NameCon UId="31" Name="in" /><NameCon UId="32" Name="in" /></Wire>
+                <Wire UId="41"><IdentCon UId="21" /><NameCon UId="31" Name="operand" /></Wire>
+                <Wire UId="42"><IdentCon UId="22" /><NameCon UId="32" Name="operand" /></Wire>
+                <Wire UId="43"><IdentCon UId="23" /><NameCon UId="33" Name="operand" /></Wire>
+                <Wire UId="44"><NameCon UId="31" Name="out" /><NameCon UId="34" Name="in1" /></Wire>
+                <Wire UId="45"><NameCon UId="32" Name="out" /><NameCon UId="33" Name="in" /></Wire>
+                <Wire UId="46"><NameCon UId="33" Name="out" /><NameCon UId="34" Name="in2" /></Wire>
+                <Wire UId="47"><NameCon UId="34" Name="out" /><NameCon UId="35" Name="in" /></Wire>
+                <Wire UId="48"><IdentCon UId="24" /><NameCon UId="35" Name="operand" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="G" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+              <Parts>
+                <Access Scope="LocalVariable" UId="21"><Symbol><Component Name="A" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="22"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Station_Handling" /><Component Name="Request_Open_Cover_Command" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="23"><Symbol><Component Name="X" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="24"><Symbol><Component Name="C" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="25"><Symbol><Component Name="D" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="26"><Symbol><Component Name="E" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="27"><Symbol><Component Name="F" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="28"><Symbol><Component Name="Y" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="29"><Symbol><Component Name="K" /></Symbol></Access>
+                <Part Name="Contact" UId="31" />
+                <Part Name="Contact" UId="32" />
+                <Part Name="O" UId="42"><TemplateValue Name="Card" Type="Cardinality">2</TemplateValue></Part>
+                <Part Name="Contact" UId="41" />
+                <Part Name="Coil" UId="33" />
+                <Part Name="Contact" UId="34" />
+                <Part Name="Contact" UId="35" />
+                <Part Name="Contact" UId="36" />
+                <Part Name="Contact" UId="37" />
+                <Part Name="O" UId="38"><TemplateValue Name="Card" Type="Cardinality">2</TemplateValue></Part>
+                <Part Name="Coil" UId="39" />
+              </Parts>
+              <Wires>
+                <Wire UId="40"><Powerrail /><NameCon UId="31" Name="in" /><NameCon UId="41" Name="in" /><NameCon UId="34" Name="in" /><NameCon UId="35" Name="in" /></Wire>
+                <Wire UId="41"><NameCon UId="31" Name="out" /><NameCon UId="32" Name="in" /></Wire>
+                <Wire UId="42"><NameCon UId="32" Name="out" /><NameCon UId="42" Name="in1" /></Wire>
+                <Wire UId="56"><NameCon UId="41" Name="out" /><NameCon UId="42" Name="in2" /></Wire>
+                <Wire UId="57"><NameCon UId="42" Name="out" /><NameCon UId="33" Name="in" /></Wire>
+                <Wire UId="58"><IdentCon UId="29" /><NameCon UId="41" Name="operand" /></Wire>
+                <Wire UId="43"><NameCon UId="34" Name="out" /><NameCon UId="38" Name="in1" /></Wire>
+                <Wire UId="44"><NameCon UId="35" Name="out" /><NameCon UId="36" Name="in" /></Wire>
+                <Wire UId="45"><NameCon UId="36" Name="out" /><NameCon UId="37" Name="in" /></Wire>
+                <Wire UId="46"><NameCon UId="37" Name="out" /><NameCon UId="38" Name="in2" /></Wire>
+                <Wire UId="47"><NameCon UId="38" Name="out" /><NameCon UId="39" Name="in" /></Wire>
+                <Wire UId="48"><IdentCon UId="21" /><NameCon UId="31" Name="operand" /></Wire>
+                <Wire UId="49"><IdentCon UId="22" /><NameCon UId="32" Name="operand" /></Wire>
+                <Wire UId="50"><IdentCon UId="23" /><NameCon UId="33" Name="operand" /></Wire>
+                <Wire UId="51"><IdentCon UId="24" /><NameCon UId="34" Name="operand" /></Wire>
+                <Wire UId="52"><IdentCon UId="25" /><NameCon UId="35" Name="operand" /></Wire>
+                <Wire UId="53"><IdentCon UId="26" /><NameCon UId="36" Name="operand" /></Wire>
+                <Wire UId="54"><IdentCon UId="27" /><NameCon UId="37" Name="operand" /></Wire>
+                <Wire UId="55"><IdentCon UId="28" /><NameCon UId="39" Name="operand" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="H" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+              <Parts>
+                <Access Scope="LocalVariable" UId="21"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Station_Handling" /><Component Name="Request_Open_Cover_Q" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="22"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Station_Handling" /><Component Name="Request_Open_Cover_R" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="23"><Symbol><Component Name="P" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="24"><Symbol><Component Name="DB_Work_ProcessBath" /><Component Name="Station_Handling" /><Component Name="Request_Open_Cover_B" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="25"><Symbol><Component Name="C" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="26"><Symbol><Component Name="W" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="27"><Symbol><Component Name="Z" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="28"><Symbol><Component Name="V" /></Symbol></Access>
+                <Part Name="Contact" UId="31" />
+                <Part Name="Contact" UId="32" />
+                <Part Name="Contact" UId="33" />
+                <Part Name="Contact" UId="34" />
+                <Part Name="Contact" UId="35" />
+                <Part Name="Coil" UId="37" />
+                <Part Name="Coil" UId="38" />
+                <Part Name="Coil" UId="39" />
+              </Parts>
+              <Wires>
+                <Wire UId="40"><Powerrail /><NameCon UId="31" Name="in" /><NameCon UId="33" Name="in" /></Wire>
+                <Wire UId="41"><NameCon UId="31" Name="out" /><NameCon UId="32" Name="in" /></Wire>
+                <Wire UId="42"><NameCon UId="32" Name="out" /><NameCon UId="37" Name="in" /></Wire>
+                <Wire UId="43"><NameCon UId="33" Name="out" /><NameCon UId="34" Name="in" /><NameCon UId="35" Name="in" /></Wire>
+                <Wire UId="44"><NameCon UId="35" Name="out" /><NameCon UId="39" Name="in" /></Wire>
+                <Wire UId="45"><IdentCon UId="28" /><NameCon UId="39" Name="operand" /></Wire>
+                <Wire UId="46"><NameCon UId="34" Name="out" /><NameCon UId="38" Name="in" /></Wire>
+                <Wire UId="47"><IdentCon UId="21" /><NameCon UId="31" Name="operand" /></Wire>
+                <Wire UId="48"><IdentCon UId="22" /><NameCon UId="32" Name="operand" /></Wire>
+                <Wire UId="49"><IdentCon UId="23" /><NameCon UId="33" Name="operand" /></Wire>
+                <Wire UId="50"><IdentCon UId="24" /><NameCon UId="34" Name="operand" /></Wire>
+                <Wire UId="51"><IdentCon UId="25" /><NameCon UId="35" Name="operand" /></Wire>
+                <Wire UId="52"><IdentCon UId="26" /><NameCon UId="37" Name="operand" /></Wire>
+                <Wire UId="53"><IdentCon UId="27" /><NameCon UId="38" Name="operand" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
     </ObjectList>
   </SW.Blocks.FB>
 </Document>

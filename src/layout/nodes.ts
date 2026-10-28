@@ -33,6 +33,7 @@ export interface LNode {
   /** Total height including labels above the symbol. */
   h: number;
   headLines: string[];
+  /** Boxes: height of the label block above the box. Contacts/coils: extra label height above the symbol line. */
   headH: number;
   title: string;
   sub: string;
@@ -86,6 +87,24 @@ const TYPE_TEMPLATES = ['SrcType', 'time_type', 'DestType'];
 
 export const textWidth = (s: string): number => s.length * CHAR_W;
 
+/** Contact/coil operands are wrapped to this many characters per line, like TIA Portal does. */
+const WRAP_CHARS = 14;
+const WRAP_BREAKS = '.[]",_';
+
+/** Wraps an operand into lines of at most `maxChars`, preferring to break after a separator. */
+export function wrapOperand(text: string, maxChars = WRAP_CHARS): string[] {
+  const lines: string[] = [];
+  let rest = text;
+  while (rest.length > maxChars) {
+    const window = rest.slice(0, maxChars);
+    const lastBreak = Math.max(...[...WRAP_BREAKS].map((c) => window.lastIndexOf(c)));
+    const cut = lastBreak >= 0 ? lastBreak + 1 : maxChars;
+    lines.push(rest.slice(0, cut));
+    rest = rest.slice(cut);
+  }
+  return rest ? [...lines, rest] : lines;
+}
+
 type PinMap = Map<string, PinState>;
 
 function pinLabel(name: string): string {
@@ -100,13 +119,15 @@ const plainPin = (name: string, row = 0): PinDesc => ({ name, label: '', row, ne
 function symbolNode(part: FlgPart, kind: 'contact' | 'coil', pins: PinMap): LNode {
   const operand = pins.get('operand')?.accessIn ?? '';
   const negated = part.negated.has('operand');
+  const lines = wrapOperand(operand);
+  const extraH = Math.max(0, lines.length - 1) * HEAD_LINE;
   return {
     part,
     kind,
-    w: Math.max(SYM_W, textWidth(operand) + 10),
-    h: SYM_H,
-    headLines: operand ? [operand] : [],
-    headH: 0,
+    w: Math.max(SYM_W, ...lines.map((l) => textWidth(l) + 10)),
+    h: SYM_H + extraH,
+    headLines: lines,
+    headH: extraH,
     title: '',
     sub: '',
     mark: kind === 'coil' ? (negated ? '/' : (COIL_MARKS[part.name] ?? '')) : '',

@@ -3,7 +3,8 @@ export type Pt = [number, number];
 export type TextClass = 'operand' | 'pin' | 'title' | 'head' | 'type' | 'hint';
 
 export type SceneItem =
-  | { t: 'line'; pts: Pt[]; cls: 'wire' | 'rail' | 'tick' }
+  /** `net` is the index of the logical connection a routed wire belongs to; unrelated nets must not cross. */
+  | { t: 'line'; pts: Pt[]; cls: 'wire' | 'rail' | 'tick'; net?: number }
   | { t: 'text'; x: number; y: number; s: string; cls: TextClass; anchor: 'start' | 'middle' | 'end' }
   | { t: 'box'; x: number; y: number; w: number; h: number; headH: number }
   | { t: 'contact'; cx: number; y: number; negated: boolean; edge: '' | 'P' | 'N' }
