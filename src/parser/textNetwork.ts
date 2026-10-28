@@ -1,5 +1,5 @@
 import { child, childrenNamed, type XNode } from './xml';
-import { formatAccess } from './access';
+import { formatAccess, formatInstance } from './access';
 
 function textOf(node: XNode): string {
   return child(node, 'Text')?.raw ?? node.raw;
@@ -13,7 +13,9 @@ function renderNode(node: XNode): string {
     case 'Blank':
       return ' '.repeat(Number(node.attrs.Num ?? '1'));
     case 'NewLine':
-      return '\n';
+      return '\n'.repeat(Number(node.attrs.Num ?? '1'));
+    case 'Parameter':
+      return `${node.attrs.Name ?? ''}${node.children.map(renderNode).join('')}`;
     case 'Text':
       return node.raw;
     case 'Comment':
@@ -27,11 +29,23 @@ function renderNode(node: XNode): string {
   }
 }
 
+/** An FB/FC call: the callee (instance or block name) followed by the nested `(param := value, ...)` token stream. */
+function renderCallInfo(callInfo: XNode): string {
+  const instance = child(callInfo, 'Instance');
+  const callee = instance ? formatInstance(instance) : `"${callInfo.attrs.Name ?? ''}"`;
+  const body = callInfo.children.filter((c) => c.name !== 'Instance');
+  return `${callee}${body.map(renderNode).join('')}`;
+}
+
 function renderAccess(access: XNode): string {
   if (access.attrs.Scope === 'Call') {
     const instruction = child(access, 'Instruction');
     if (instruction) {
       return `${instruction.attrs.Name ?? ''}${instruction.children.map(renderNode).join('')}`;
+    }
+    const callInfo = child(access, 'CallInfo');
+    if (callInfo) {
+      return renderCallInfo(callInfo);
     }
   }
   return formatAccess(access);

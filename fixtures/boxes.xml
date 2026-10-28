@@ -130,6 +130,67 @@
           <ProgrammingLanguage>LAD</ProgrammingLanguage>
         </AttributeList>
       </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="A" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v4">
+              <Access Scope="Call" UId="21">
+                <CallInfo UId="22" BlockType="FB" Name="FB_Cfg">
+                  <Instance Scope="LocalVariable" UId="23">
+                    <Component Name="Ins_Cfg" UId="24" />
+                  </Instance>
+                  <Token Text="(" UId="25" />
+                  <Parameter Name="i_A" UId="26">
+                    <Blank Num="2" UId="27" />
+                    <Token Text=":=" UId="28" />
+                    <Blank UId="29" />
+                    <Access Scope="GlobalVariable" UId="30">
+                      <Symbol UId="31">
+                        <Component Name="M_IBN_0" UId="32">
+                          <BooleanAttribute Name="HasQuotes" UId="33">true</BooleanAttribute>
+                        </Component>
+                      </Symbol>
+                    </Access>
+                  </Parameter>
+                  <Token Text="," UId="34" />
+                  <Blank UId="35" />
+                  <LineComment UId="36">
+                    <Text UId="37"> TODO a</Text>
+                  </LineComment>
+                  <NewLine UId="38" />
+                  <Blank Num="4" UId="39" />
+                  <Parameter Name="io_DB" UId="40">
+                    <Blank Num="2" UId="41" />
+                    <Token Text=":=" UId="42" />
+                    <Blank UId="43" />
+                    <Access Scope="GlobalVariable" UId="44">
+                      <Symbol UId="45">
+                        <Component Name="DB_Work" UId="46">
+                          <BooleanAttribute Name="HasQuotes" UId="47">true</BooleanAttribute>
+                        </Component>
+                        <Token Text="." UId="48" />
+                        <Component Name="Bath" UId="49">
+                          <Token Text="[" UId="50" />
+                          <Access Scope="LocalVariable" UId="51">
+                            <Symbol UId="52">
+                              <Component Name="tBathIndex" UId="53" />
+                            </Symbol>
+                          </Access>
+                          <Token Text="]" UId="54" />
+                        </Component>
+                      </Symbol>
+                    </Access>
+                  </Parameter>
+                  <Token Text=")" UId="55" />
+                </CallInfo>
+              </Access>
+              <Token Text=";" UId="56" />
+              <NewLine Num="2" UId="57" />
+            </StructuredText>
+          </NetworkSource>
+          <ProgrammingLanguage>SCL</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
     </ObjectList>
   </SW.Blocks.FB>
 </Document>

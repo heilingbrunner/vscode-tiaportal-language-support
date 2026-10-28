@@ -108,6 +108,19 @@ describe('boxes.xml (synthetic)', () => {
     expect(block?.networks[3]?.body).toEqual({ kind: 'code', language: 'SCL', lines: ['#Run := #Start;', '// done'] });
     expect(block?.networks[4]?.body.kind).toBe('empty');
   });
+
+  it('renders an SCL block call with its instance, parameters, comments and blank lines', () => {
+    expect(block?.networks[5]?.body).toEqual({
+      kind: 'code',
+      language: 'SCL',
+      lines: [
+        '#Ins_Cfg(i_A  := "M_IBN_0", // TODO a',
+        '    io_DB  := "DB_Work".Bath[#tBathIndex]);',
+        '',
+        '',
+      ],
+    });
+  });
 });
 
 describe('robustness', () => {
