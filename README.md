@@ -61,14 +61,16 @@ PLC data types (`TYPE "Name"` … `END_TYPE`).
 - The UDT grammar is the SCL grammar: `TYPE` header, `TITLE`, `VERSION`, nested `STRUCT … END_STRUCT`, member attribute pragmas, quoted UDT references, `Array[a..b] of …`, `String[n]` and comments.
 - Initial values in declarations: plain and typed literals (`:= 1.5`, `:= T#2s`, `:= BYTE#16#FF`) and aggregate initializers (`[(1, ()), (2, ())]`, `[8(1.0)]`).
 
-## TIA Viewer (XML)
+## TIA Viewer
 
-A read-only viewer for blocks exported from TIA Portal as Openness XML (FB, FC, OB). It shows the interface table, block and network titles/comments and the networks:
+A read-only viewer for TIA Portal exports: Openness XML (`*.xml`) and the text sources `*.db`, `*.udt`, `*.scl`, `*.awl` and `*.stl`. Open a file with *Reopen Editor With… > TIA Viewer*, or run *TIA: Open Viewer to the Side*. The setting `tiaViewer.culture` (for example `de-DE`) selects the language of titles and comments.
+
+### Openness XML (`*.xml`)
+
+Blocks exported as Openness XML (FB, FC, OB). The viewer shows the interface table, block and network titles/comments and the networks:
 
 - **LAD** is drawn as a ladder diagram: contacts (incl. negated and edge), coils (`S`, `R`), OR branches, FB/FC calls with instance and parameters, timers, comparators, math and `Move`. Parts without a dedicated symbol are drawn as a generic box.
 - **SCL** and **STL** networks are shown as source text.
-
-Open an `.xml` file with *Reopen Editor With… > TIA Viewer*, or run *TIA: Open Viewer to the Side*. The setting `tiaViewer.culture` (for example `de-DE`) selects the language of titles and comments.
 
 Callee block numbers (`%FB1`, `%DB43`) are not part of the export and are not shown.
 

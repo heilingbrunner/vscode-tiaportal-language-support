@@ -1,5 +1,14 @@
 # Change Log
 
+## [0.0.5]
+
+- Fixed: LAD coils that feed a following element (e.g. a coil followed by a contact) lost the wire
+  between them. Every coil now has a trailing wire; a coil that feeds nothing ends in a vertical tick,
+  like in TIA Portal.
+- LAD blocks: the input pins of a call or box are spaced by the operand labels of the contacts and coils
+  feeding them (also through OR branches) instead of a fixed distance, so labels no longer overlap the
+  wire above. Contacts fed from the power rail line up with the block pin they drive.
+
 ## [0.0.4]
 
 - The **TIA Block View** is now called **TIA Viewer**, because it shows more than blocks. The command is
