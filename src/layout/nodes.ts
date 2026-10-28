@@ -135,7 +135,8 @@ function symbolNode(part: FlgPart, kind: 'contact' | 'coil', pins: PinMap): LNod
     edge: kind === 'contact' ? (CONTACT_EDGES[part.name] ?? '') : '',
     hasHiddenParams: false,
     left: [plainPin('in')],
-    right: kind === 'contact' ? [plainPin('out')] : [],
+    // a coil can still feed on (e.g. into a following contact), so it keeps an output pin
+    right: [plainPin('out')],
     leftPad: 0,
     rightPad: 0,
   };

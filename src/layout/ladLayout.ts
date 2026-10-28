@@ -15,13 +15,16 @@ const STUB = 14;
 const SYMBOL_HALF = 10;
 /** Clearance kept between a wire that skips over a column and the nodes (and labels) placed in it. */
 const CROSS_MARGIN = 4;
-/** How far above its symbol line an operand label reaches (plus a little air). */
-const LABEL_REACH = 30;
 /** A chain start is moved at most this often, and at most this far in total, to straighten its chain. */
 const MAX_AIMS = 4;
 const MAX_AIM_SHIFT = 250;
 /** Upper bound for the placement passes that grow the fan-out spans (they settle after one or two). */
 const MAX_PASSES = 8;
+
+/** How far above its symbol line a one-line operand label reaches (text top, plus air for a wire above). */
+const LABEL_REACH = 38;
+
+type PinRefLike = { uid: string } | 'rail' | undefined;
 
 /** A wire that runs straight through the columns between its source and its farthest destination. */
 interface PassThrough {
@@ -95,6 +98,47 @@ class LadLayout {
         orYs: new Map(),
       });
     }
+    for (const entry of this.entries.values()) {
+      this.spaceBoxInputs(entry);
+    }
+  }
+
+  /**
+   * Height an input pin's wire needs above it: the operand label of the contact/coil that feeds it (seen
+   * through an OR bar, whose output follows its first input) sits on top of the wire.
+   */
+  private feedLabelHeight(src: PinRefLike, seen = new Set<string>()): number {
+    const entry = src === 'rail' || !src ? undefined : this.entries.get(src.uid);
+    if (!entry || seen.has(entry.uid)) {
+      return 0;
+    }
+    seen.add(entry.uid);
+    const { node } = entry;
+    if (node.kind === 'contact' || node.kind === 'coil') {
+      return node.headH + LABEL_REACH;
+    }
+    if (node.kind === 'or') {
+      const first = node.left[0];
+      return first ? this.feedLabelHeight(this.pins.get(entry.uid)?.get(first.name)?.flowSrc, seen) : 0;
+    }
+    return 0;
+  }
+
+  /** Spreads the input pins of a box only as far apart as the labels of the elements feeding them need. */
+  private spaceBoxInputs(entry: Entry): void {
+    const { node } = entry;
+    if (node.kind !== 'box') {
+      return;
+    }
+    let y = 0;
+    const left = node.left.map((pin, i) => {
+      const need = i === 0 ? 0 : this.feedLabelHeight(this.pins.get(entry.uid)?.get(pin.name)?.flowSrc);
+      y = i === 0 ? 0 : y + Math.max(ROW, need);
+      return { ...pin, row: y / ROW };
+    });
+    const oldRows = Math.max(node.left.length, node.right.length, 1);
+    const newRows = Math.max(left.length > 0 ? (y + ROW) / ROW : 0, node.right.length, 1);
+    entry.node = { ...node, left, h: node.h + (newRows - oldRows) * ROW };
   }
 
   run(): LadScene {
@@ -435,17 +479,23 @@ class LadLayout {
       return false;
     }
     let delta = 0;
-    for (const dst of this.pins.get(entry.uid)?.get('out')?.flowDsts ?? []) {
+    // an OR bar between the node and the box passes its row on to the box pin
+    const dsts = (this.pins.get(entry.uid)?.get('out')?.flowDsts ?? []).flatMap((dst) =>
+      this.entries.get(dst.uid)?.node.kind === 'or' ? (this.pins.get(dst.uid)?.get('out')?.flowDsts ?? []) : [dst],
+    );
+    for (const dst of dsts) {
       const dstEntry = this.entries.get(dst.uid);
       if (dstEntry?.node.kind !== 'box') {
         continue;
       }
       const row = this.pinY(dstEntry, dst.pin);
       // The operand label sits above the symbol line; do not park it on the wire of another input pin.
-      const reach = LABEL_REACH + entry.node.headH;
+      const reach = entry.node.headH + LABEL_REACH;
       const blocked = dstEntry.node.left.some((p) => {
         const y = this.pinY(dstEntry, p.name);
-        return p.name !== dst.pin && y < row && y > row - reach && this.pins.get(dst.uid)?.get(p.name)?.flowSrc;
+        return (
+          p.name !== dst.pin && y < row && y > row - reach + 0.5 && this.pins.get(dst.uid)?.get(p.name)?.flowSrc
+        );
       });
       if (!blocked) {
         delta = Math.max(delta, row - this.pinOffset(entry.node, 'out') - entry.top);
@@ -624,11 +674,14 @@ class LadLayout {
     const cx = (col.left + col.right) / 2;
     const y = entry.top + node.headH + SYM_LINE;
     this.wire([col.left, y], [cx - SYMBOL_HALF, y]);
+    this.wire([cx + SYMBOL_HALF, y], [col.right, y]);
     if (node.kind === 'contact') {
-      this.wire([cx + SYMBOL_HALF, y], [col.right, y]);
       this.out.push({ t: 'contact', cx, y, negated: node.negated, edge: node.edge });
     } else {
       this.out.push({ t: 'coil', cx, y, mark: node.mark });
+      if (this.hasNoFlowDst(entry.uid, 'out')) {
+        this.out.push({ t: 'line', pts: [[col.right, y - TICK], [col.right, y + TICK]], cls: 'tick' });
+      }
     }
     node.headLines.forEach((line, i) => {
       this.out.push({ t: 'text', x: cx, y: entry.top + 11 + i * HEAD_LINE, s: line, cls: 'operand', anchor: 'middle' });
