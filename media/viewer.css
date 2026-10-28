@@ -87,6 +87,11 @@ table.interface tr.section td {
   font-weight: 600;
 }
 
+/* a section without members: normal weight shows it is empty without having to expand it */
+table.interface tr.section.empty td {
+  font-weight: normal;
+}
+
 table.interface td.rownum {
   width: 2.5em;
   text-align: right;

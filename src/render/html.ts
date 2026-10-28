@@ -68,8 +68,9 @@ function sectionRows(section: InterfaceSection, index: number, state: TableState
   const flags = !['Temp', 'Constant', 'Return'].includes(section.name);
   state.row++;
   const caretClass = state.db ? 'caret' : 'caret collapsed';
+  const rowClass = section.members.length === 0 ? 'section empty' : 'section';
   const header =
-    `<tr class="section" data-id="${id}" data-parent=""><td class="rownum">${state.row}</td>` +
+    `<tr class="${rowClass}" data-id="${id}" data-parent=""><td class="rownum">${state.row}</td>` +
     `<td colspan="${state.columns - 1}"><span class="${caretClass}" data-toggle="${id}">▾</span>${escapeHtml(section.name)}</td></tr>`;
   return header + section.members.map((m, i) => memberRows(m, `${id}.${i}`, id, 1, flags, state)).join('');
 }
