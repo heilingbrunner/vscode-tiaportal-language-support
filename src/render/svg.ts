@@ -1,3 +1,4 @@
+import { textWidth } from '../layout/nodes';
 import type { LadScene, SceneItem } from '../layout/scene';
 
 const HALF_SYMBOL = 10;
@@ -14,7 +15,30 @@ export function escapeHtml(text: string): string {
 
 const num = (n: number): string => String(Math.round(n * 10) / 10);
 
+/** Highlight rectangle behind a changed text or symbol (lines and boxes are recoloured by CSS only). */
+function diffBackground(item: SceneItem): string {
+  const rect = (x: number, y: number, w: number, h: number): string =>
+    `<rect class="diff-bg" x="${num(x)}" y="${num(y)}" width="${num(w)}" height="${num(h)}" rx="2"/>`;
+  switch (item.t) {
+    case 'text': {
+      const w = textWidth(item.s) + 6;
+      const x = item.anchor === 'start' ? item.x - 3 : item.anchor === 'middle' ? item.x - w / 2 : item.x - w + 3;
+      return rect(x, item.y - 12, w, 16);
+    }
+    case 'contact':
+    case 'coil':
+      return rect(item.cx - HALF_SYMBOL - 6, item.y - SYMBOL_HEIGHT - 3, 2 * HALF_SYMBOL + 12, 2 * SYMBOL_HEIGHT + 6);
+    default:
+      return '';
+  }
+}
+
 function renderItem(item: SceneItem): string {
+  const svg = renderShape(item);
+  return item.diff ? `<g class="diff-${item.diff}">${diffBackground(item)}${svg}</g>` : svg;
+}
+
+function renderShape(item: SceneItem): string {
   switch (item.t) {
     case 'line':
       return `<polyline class="${item.cls}" points="${item.pts.map(([x, y]) => `${num(x)},${num(y)}`).join(' ')}"/>`;

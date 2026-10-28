@@ -45,7 +45,9 @@ export function renderCode(code: CodeInfo, idPrefix = ''): string {
       : '<span class="fold none"></span>';
     // only the main code pane takes part in folding and the outline (they address lines by number)
     const lineAttr = idPrefix === '' ? ` data-line="${line}"` : '';
-    return `<div class="cl" id="${idPrefix}L${line}"${lineAttr}><span class="ln">${line}</span>${toggle}<span class="tx">${lineHtml(text, code.tokens?.[i])}</span></div>`;
+    const mark = code.lineMarks?.[i];
+    const cls = mark ? `cl diff-${mark}` : 'cl';
+    return `<div class="${cls}" id="${idPrefix}L${line}"${lineAttr}><span class="ln">${line}</span>${toggle}<span class="tx">${lineHtml(text, code.tokens?.[i])}</span></div>`;
   });
   const outline = outlineHtml(code);
   return `<section class="code-view${outline ? '' : ' no-outline'}">${outline}<div class="code-pane">${rows.join('')}</div></section>`;

@@ -4,6 +4,17 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 
 ![Screenshot of TIA Portal Language Support](https://github.com/heilingbrunner/vscode-tiaportal-language-support/blob/main/assets/screenshot-1.png?raw=true)
 
+## Features
+
+- **Syntax highlighting** for `SCL`, `AWL` / `STL`, `DB` and `UDT` sources.
+- **`UDT` lookup** from the workspace; views refresh when a file changes.
+- **`LAD` networks** drawn as ladder diagrams, with zoom.
+- **`SCL` / `STL` code** with line numbers, folding and a `REGION` outline.
+- **TIA Viewer**: read-only, TIA-style view of Openness XML and `.db`, `.udt`, `.scl`, `.awl`, `.stl` files.
+- **Interface table** with expandable structs, arrays and UDT members.
+- **Collapsible networks** and a culture setting for titles and comments.
+- **git diff**: both versions side by side, red/green marks, synchronized scrolling.
+
 ## Languages
 
 | Language                                 | Extensions     | Scope name       |
@@ -63,7 +74,7 @@ PLC data types (`TYPE "Name"` … `END_TYPE`).
 
 ## TIA Viewer
 
-A read-only viewer for TIA Portal exports: Openness XML (`*.xml`) and the text sources `*.db`, `*.udt`, `*.scl`, `*.awl` and `*.stl`. Open a file with *Reopen Editor With… > TIA Viewer*, or run *TIA: Open Viewer to the Side*. The setting `tiaViewer.culture` (for example `de-DE`) selects the language of titles and comments.
+A read-only viewer for TIA Portal exports: Openness XML (`*.xml`) and the text sources `*.db`, `*.udt`, `*.scl`, `*.awl` and `*.stl`. Open a file with *Reopen Editor With… > TIA Viewer*, or run *TIA: Open Viewer to the Side*. Changes can be compared in the viewer too, see [git diff](#git-diff). The setting `tiaViewer.culture` (for example `de-DE`) selects the language of titles and comments.
 
 ### Openness XML (`*.xml`)
 
@@ -89,6 +100,47 @@ The same view opens TIA data block sources (*Reopen Editor With… > TIA Viewer*
 ### STL sources (`*.awl`, `*.stl`)
 
 The same view opens STL block sources: the interface table above one block per `NETWORK`, each with its title, the comment lines below the title and a numbered, syntax-highlighted listing of the instructions (English or German mnemonics, labels, absolute addresses, block calls). SCL and STL networks inside Openness XML exports are shown the same way.
+
+## git diff
+
+Open a change of an exported file (`*.db`, `*.udt`, `*.scl`, `*.awl`, `*.stl`, `*.xml`) from Source Control or the Timeline: both versions are shown in the TIA Viewer side by side, differences are marked red (old version) and green (new version), and both sides scroll together.
+
+**Required**
+
+- A Git repository that contains the exported files, and the built-in Git extension of VS Code.
+
+**Optional**
+
+- A `.gitattributes` file in the repository. TIA Portal writes Windows line endings; pinning them keeps line-ending changes out of the diffs. It is the only setup that was needed in testing:
+
+  ```gitattributes
+  # TIA Portal exports: stable line endings, so a diff shows real changes only
+  *.db   text eol=crlf
+  *.udt  text eol=crlf
+  *.scl  text eol=crlf
+  *.awl  text eol=crlf
+  *.stl  text eol=crlf
+  *.xml  text eol=crlf
+  ```
+
+  Apply it to files that are already committed with `git add --renormalize .`.
+
+- `workbench.editorAssociations`, only if a change opens as a plain text diff instead of two viewers. It makes the viewer the default editor for these file types (user or workspace `settings.json`):
+
+  ```json
+  "workbench.editorAssociations": {
+    "*.db": "tia.viewer",
+    "*.udt": "tia.viewer",
+    "*.scl": "tia.viewer",
+    "*.awl": "tia.viewer",
+    "*.stl": "tia.viewer",
+    "*.xml": "tia.viewer"
+  }
+  ```
+
+  Use *Reopen Editor With… > Text Editor* to see the plain text diff of a single file again.
+
+The viewer compares a `git:` revision with the file on disk. Staged changes (index vs. `HEAD`) are shown unmarked, and the scroll position is synchronised in pixels, so the sides drift apart when earlier content differs in height.
 
 ## Development
 

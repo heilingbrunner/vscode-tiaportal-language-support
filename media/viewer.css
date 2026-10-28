@@ -5,6 +5,10 @@
   --tia-band: color-mix(in srgb, var(--vscode-editor-foreground) 12%, var(--vscode-editor-background));
   --tia-muted: var(--vscode-descriptionForeground);
   --tia-accent: var(--vscode-textLink-foreground);
+  --tia-add: var(--vscode-gitDecoration-addedResourceForeground, #2ea043);
+  --tia-del: var(--vscode-gitDecoration-deletedResourceForeground, #f85149);
+  --tia-add-bg: var(--vscode-diffEditor-insertedLineBackground, rgba(46, 160, 67, 0.25));
+  --tia-del-bg: var(--vscode-diffEditor-removedLineBackground, rgba(248, 81, 73, 0.25));
 }
 
 body {
@@ -394,3 +398,66 @@ svg.lad text.mark {
   font-size: 11px;
   font-weight: 600;
 }
+
+/* ---- version comparison (TIA: Compare with Previous Version): red = old / changed from, green = new / changed to ---- */
+
+.diff-del { color: var(--tia-del); }
+.diff-add { color: var(--tia-add); }
+
+table.interface tr.diff-del td,
+table.interface td.diff-del {
+  background: var(--tia-del-bg);
+}
+
+table.interface tr.diff-add td,
+table.interface td.diff-add {
+  background: var(--tia-add-bg);
+}
+
+table.interface td.diff-del,
+table.interface td.diff-add,
+table.interface tr.diff-del td,
+table.interface tr.diff-add td {
+  font-weight: 600;
+}
+
+/* a collapsed row hides its differing children: mark the row itself */
+table.interface tr.has-diff-del td.rownum { box-shadow: inset 4px 0 0 var(--tia-del); }
+table.interface tr.has-diff-add td.rownum { box-shadow: inset 4px 0 0 var(--tia-add); }
+
+span.diff-del,
+span.diff-add {
+  font-weight: 600;
+}
+
+span.diff-del { background: var(--tia-del-bg); }
+span.diff-add { background: var(--tia-add-bg); }
+
+.network.net-diff-del > h2 { box-shadow: inset 4px 0 0 var(--tia-del); }
+.network.net-diff-add > h2 { box-shadow: inset 4px 0 0 var(--tia-add); }
+
+.cl.diff-del { background: var(--tia-del-bg); }
+.cl.diff-add { background: var(--tia-add-bg); }
+.cl.diff-del,
+.cl.diff-add { color: inherit; }
+
+pre.code .diff-line { display: inline-block; min-width: 100%; }
+pre.code .diff-line.diff-del { background: var(--tia-del-bg); color: inherit; }
+pre.code .diff-line.diff-add { background: var(--tia-add-bg); color: inherit; }
+
+svg.lad .diff-bg { stroke: none; }
+svg.lad .diff-del .diff-bg { fill: var(--tia-del-bg); }
+svg.lad .diff-add .diff-bg { fill: var(--tia-add-bg); }
+
+svg.lad g.diff-del polyline,
+svg.lad g.diff-del .sym,
+svg.lad g.diff-del .box,
+svg.lad g.diff-del .bubble { stroke: var(--tia-del); stroke-width: 2.4; }
+
+svg.lad g.diff-add polyline,
+svg.lad g.diff-add .sym,
+svg.lad g.diff-add .box,
+svg.lad g.diff-add .bubble { stroke: var(--tia-add); stroke-width: 2.4; }
+
+svg.lad g.diff-del text { fill: var(--tia-del); font-weight: 700; }
+svg.lad g.diff-add text { fill: var(--tia-add); font-weight: 700; }

@@ -1,4 +1,5 @@
 import type { LadScene } from '../layout/scene';
+import type { DiffMark, LineMarks, MemberDiff } from './diff';
 
 export type BlockKind = 'FB' | 'FC' | 'OB' | 'DB' | 'UDT';
 
@@ -18,19 +19,25 @@ export interface InterfaceMember {
   setpoint: boolean;
   comment: string;
   children: InterfaceMember[];
+  /** Set by the version comparison. */
+  diff?: MemberDiff;
+  /** Set by the version comparison: a descendant differs (the row may be collapsed). */
+  diffInside?: DiffMark;
 }
 
 export interface InterfaceSection {
   name: string;
   members: InterfaceMember[];
+  /** Set by the version comparison: a member of this section differs. */
+  diffInside?: DiffMark;
 }
 
 export type NetworkBody =
   | { kind: 'empty' }
   | { kind: 'lad'; scene: LadScene }
-  | { kind: 'text'; language: string; lines: string[] }
+  | { kind: 'text'; language: string; lines: string[]; lineMarks?: LineMarks }
   /** SCL or STL source of a network, shown as a numbered code pane (highlighted when `tokens` is set). */
-  | { kind: 'code'; language: string; lines: string[]; tokens?: CodeToken[][] };
+  | { kind: 'code'; language: string; lines: string[]; tokens?: CodeToken[][]; lineMarks?: LineMarks };
 
 export interface NetworkModel {
   index: number;
@@ -38,6 +45,10 @@ export interface NetworkModel {
   comment: string;
   language: string;
   body: NetworkBody;
+  /** Set by the version comparison: the network is added, removed or changed. */
+  diff?: DiffMark;
+  titleDiff?: DiffMark;
+  commentDiff?: DiffMark;
 }
 
 /** A run of source text with one highlight class (empty class = plain text). */
@@ -65,6 +76,7 @@ export interface CodeInfo {
   regions: Region[];
   folds: Fold[];
   tokens?: CodeToken[][];
+  lineMarks?: LineMarks;
 }
 
 export interface DataBlockInfo {
@@ -98,4 +110,6 @@ export interface BlockModel {
   comment: string;
   sections: InterfaceSection[];
   networks: NetworkModel[];
+  titleDiff?: DiffMark;
+  commentDiff?: DiffMark;
 }

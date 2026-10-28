@@ -1,3 +1,4 @@
+import type { DiffMark } from '../model/diff';
 import type { BlockModel, InterfaceMember, InterfaceSection, NetworkModel } from '../model/types';
 import { renderCode } from './code';
 import { escapeHtml, sceneToSvg } from './svg';
@@ -31,8 +32,20 @@ interface TableState {
   row: number;
 }
 
-const check = (value: boolean, enabled: boolean): string =>
-  `<td class="chk"><input type="checkbox" disabled${value ? ' checked' : ''}${enabled ? '' : ' class="off"'}></td>`;
+const classAttr = (...names: string[]): string => {
+  const joined = names.filter(Boolean).join(' ');
+  return joined ? ` class="${joined}"` : '';
+};
+
+/** Cell class for a member whose own cells (not the whole row) differ between the two versions. */
+const cellDiff = (member: InterfaceMember, field: string): string =>
+  member.diff?.fields?.includes(field) ? `diff-${member.diff.mark}` : '';
+
+/** Wraps already escaped HTML in a coloured span when it differs between the two versions. */
+const diffSpan = (mark: DiffMark | undefined, html: string): string => (mark ? `<span class="diff-${mark}">${html}</span>` : html);
+
+const check = (value: boolean, enabled: boolean, diff = ''): string =>
+  `<td${classAttr('chk', diff)}><input type="checkbox" disabled${value ? ' checked' : ''}${enabled ? '' : ' class="off"'}></td>`;
 
 function memberRows(
   member: InterfaceMember,
@@ -48,23 +61,29 @@ function memberRows(
   // struct, array and UDT rows start collapsed (their children are hidden), as in TIA
   const caretClass = hasChildren ? 'caret collapsed' : 'caret';
   const caret = hasChildren ? `<span class="${caretClass}" data-toggle="${id}">▾</span>` : '<span class="caret none"></span>';
-  const start = member.startIsDefault ? ' class="start default"' : ' class="start"';
+  const start = classAttr('start', member.startIsDefault ? 'default' : '', cellDiff(member, 'start'));
   const retain = state.udt
     ? ''
     : state.db
-      ? check(member.retainChecked ?? false, flags)
-      : `<td>${escapeHtml(member.retain)}</td>`;
+      ? check(member.retainChecked ?? false, flags, cellDiff(member, 'retain'))
+      : `<td${classAttr(cellDiff(member, 'retain'))}>${escapeHtml(member.retain)}</td>`;
   const supervision = state.db ? '<td></td>' : '';
   // TIA numbers the visible rows only; rows that start hidden are numbered by viewer.js when they are shown
   if (!hidden) {
     state.row++;
   }
+  const rowClass = classAttr(
+    hidden ? 'hidden' : '',
+    member.diff && !member.diff.fields ? `diff-${member.diff.mark}` : '',
+    member.diffInside ? `has-diff-${member.diffInside}` : '',
+  );
   const row =
-    `<tr${hidden ? ' class="hidden"' : ''} data-id="${id}" data-parent="${parent}"><td class="rownum">${hidden ? '' : state.row}</td>` +
+    `<tr${rowClass} data-id="${id}" data-parent="${parent}"><td class="rownum">${hidden ? '' : state.row}</td>` +
     `<td class="name" data-depth="${depth}">${caret}${escapeHtml(member.name)}</td>` +
-    `<td>${escapeHtml(member.datatype)}</td><td${start}>${escapeHtml(member.startValue)}</td>${retain}` +
-    `${check(member.accessible, flags)}${check(member.writable, flags)}${check(member.visible, flags)}${check(member.setpoint, flags)}` +
-    `${supervision}<td>${escapeHtml(member.comment)}</td></tr>`;
+    `<td${classAttr(cellDiff(member, 'datatype'))}>${escapeHtml(member.datatype)}</td><td${start}>${escapeHtml(member.startValue)}</td>${retain}` +
+    `${check(member.accessible, flags, cellDiff(member, 'accessible'))}${check(member.writable, flags, cellDiff(member, 'writable'))}` +
+    `${check(member.visible, flags, cellDiff(member, 'visible'))}${check(member.setpoint, flags, cellDiff(member, 'setpoint'))}` +
+    `${supervision}<td${classAttr(cellDiff(member, 'comment'))}>${escapeHtml(member.comment)}</td></tr>`;
   const children = member.children
     .map((c, i) => memberRows(c, `${id}.${i}`, id, depth + 1, flags, state))
     .join('');
@@ -80,7 +99,9 @@ function sectionRows(section: InterfaceSection, index: number, state: TableState
   }
   state.row++;
   const caretClass = state.db ? 'caret' : 'caret collapsed';
-  const rowClass = section.members.length === 0 ? 'section empty' : 'section';
+  const rowClass = ['section', section.members.length === 0 ? 'empty' : '', section.diffInside ? `has-diff-${section.diffInside}` : '']
+    .filter(Boolean)
+    .join(' ');
   const header =
     `<tr class="${rowClass}" data-id="${id}" data-parent=""><td class="rownum">${state.row}</td>` +
     `<td colspan="${state.columns - 1}"><span class="${caretClass}" data-toggle="${id}">▾</span>${escapeHtml(section.name)}</td></tr>`;
@@ -103,20 +124,28 @@ function networkBody(network: NetworkModel): string {
   switch (body.kind) {
     case 'lad':
       return `<div class="scroll">${sceneToSvg(body.scene)}</div>`;
-    case 'text':
-      return `<pre class="code lang-${escapeHtml(body.language.toLowerCase())}">${escapeHtml(body.lines.join('\n'))}</pre>`;
+    case 'text': {
+      const lines = body.lines.map((line, i) => {
+        const mark = body.lineMarks?.[i];
+        return mark ? `<span class="diff-line diff-${mark}">${escapeHtml(line) || ' '}</span>` : escapeHtml(line);
+      });
+      return `<pre class="code lang-${escapeHtml(body.language.toLowerCase())}">${lines.join('\n')}</pre>`;
+    }
     case 'code':
-      return renderCode({ lines: body.lines, regions: [], folds: [], tokens: body.tokens }, `n${network.index}-`);
+      return renderCode(
+        { lines: body.lines, regions: [], folds: [], tokens: body.tokens, lineMarks: body.lineMarks },
+        `n${network.index}-`,
+      );
     case 'empty':
       return '<div class="empty">(empty network)</div>';
   }
 }
 
 function networkSection(network: NetworkModel): string {
-  const title = network.title ? `: ${escapeHtml(network.title)}` : ':';
-  const comment = network.comment ? `<div class="comment">${escapeHtml(network.comment)}</div>` : '';
+  const title = network.title ? `: ${diffSpan(network.titleDiff, escapeHtml(network.title))}` : ':';
+  const comment = network.comment ? `<div class="comment">${diffSpan(network.commentDiff, escapeHtml(network.comment))}</div>` : '';
   return (
-    `<section class="network" id="n${network.index}">` +
+    `<section${classAttr('network', network.diff ? `net-diff-${network.diff}` : '')} id="n${network.index}">` +
     `<h2 data-toggle-network><span class="caret">▾</span>Network ${network.index}${title}` +
     `<span class="lang">${escapeHtml(network.language)}</span></h2>` +
     `<div class="network-body">${comment}${networkBody(network)}</div></section>`
@@ -164,8 +193,9 @@ function titleBlock(model: BlockModel): string {
   if ((model.kind === 'DB' || model.kind === 'UDT' || model.code) && model.title === '') {
     return '';
   }
-  const comment = model.comment ? `<div class="comment">${escapeHtml(model.comment)}</div>` : '';
-  return `<section class="block-title"><h2><span class="label">Block title:</span> ${escapeHtml(model.title)}</h2>${comment}</section>`;
+  const comment = model.comment ? `<div class="comment">${diffSpan(model.commentDiff, escapeHtml(model.comment))}</div>` : '';
+  const title = diffSpan(model.titleDiff, escapeHtml(model.title));
+  return `<section class="block-title"><h2><span class="label">Block title:</span> ${title}</h2>${comment}</section>`;
 }
 
 /** Renders the whole viewer page (interface table, block title, networks) as an HTML document. */
