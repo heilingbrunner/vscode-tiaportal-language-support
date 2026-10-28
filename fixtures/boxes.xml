@@ -473,6 +473,51 @@
           <ProgrammingLanguage>LAD</ProgrammingLanguage>
         </AttributeList>
       </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="I" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+              <Parts>
+                <Access Scope="GlobalConstant" UId="21"><Constant Name="EnumMES_Spare" /></Access>
+                <Access Scope="LocalConstant" UId="22"><Constant Name="LOCAL_LIMIT" /></Access>
+                <Access Scope="LiteralConstant" UId="23"><Constant><ConstantValue>5</ConstantValue></Constant></Access>
+                <Access Scope="GlobalConstant" UId="24"><Constant Name="STATION_LEFT" /></Access>
+                <Call UId="40">
+                  <CallInfo Name="FB_Mes" BlockType="FB">
+                    <Instance Scope="LocalVariable" UId="41"><Component Name="Ins_Mes" /></Instance>
+                    <Parameter Name="i_Name" Section="Input" Type="String[20]" />
+                    <Parameter Name="i_Limit" Section="Input" Type="Int" />
+                    <Parameter Name="i_Count" Section="Input" Type="Int" />
+                    <Parameter Name="i_Side" Section="Input" Type="Int" />
+                  </CallInfo>
+                </Call>
+              </Parts>
+              <Wires>
+                <Wire UId="50"><IdentCon UId="21" /><NameCon UId="40" Name="i_Name" /></Wire>
+                <Wire UId="51"><IdentCon UId="22" /><NameCon UId="40" Name="i_Limit" /></Wire>
+                <Wire UId="52"><IdentCon UId="23" /><NameCon UId="40" Name="i_Count" /></Wire>
+                <Wire UId="53"><IdentCon UId="24" /><NameCon UId="40" Name="i_Side" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="J" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v4">
+              <Access Scope="LocalVariable" UId="21"><Symbol><Component Name="Ver" /></Symbol></Access>
+              <Blank />
+              <Token Text=":=" />
+              <Blank />
+              <Access Scope="GlobalConstant" UId="77"><Constant Name="GLOBAL_MAJOR" UId="78" /></Access>
+              <Token Text=";" />
+            </StructuredText>
+          </NetworkSource>
+          <ProgrammingLanguage>SCL</ProgrammingLanguage>
+        </AttributeList>
+      </SW.Blocks.CompileUnit>
     </ObjectList>
   </SW.Blocks.FB>
 </Document>

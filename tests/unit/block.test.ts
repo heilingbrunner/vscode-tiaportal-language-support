@@ -273,6 +273,15 @@ describe('boxes.xml (synthetic)', () => {
     expect(b!.y).toBe(p!.y);
   });
 
+  it('shows named constants wired to the pins of a call', () => {
+    const scene = sceneOf(block!.networks[13]!);
+    expect(texts(scene)).toEqual(expect.arrayContaining(['"EnumMES_Spare"', '#LOCAL_LIMIT', '5', '"STATION_LEFT"']));
+  });
+
+  it('shows named constants in SCL code', () => {
+    expect(block?.networks[14]?.body).toEqual({ kind: 'code', language: 'SCL', lines: ['#Ver := "GLOBAL_MAJOR";'] });
+  });
+
   it('keeps a coil off the OR bar that shares its column', () => {
     const scene = sceneOf(block!.networks[8]!);
     expect(ofType(scene, 'coil')).toHaveLength(3);

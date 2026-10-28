@@ -34,6 +34,19 @@ function formatConstant(access: XNode): string {
   return childText(constant, 'ConstantValue');
 }
 
+/**
+ * A user constant is exported by name only: `"NAME"` for a global one, `#NAME` for one of the block.
+ * The name is a `Name` attribute, or the value text when the constant sits in an index expression.
+ */
+function formatNamedConstant(access: XNode): string {
+  const constant = child(access, 'Constant');
+  const name = constant?.attrs.Name || childText(constant, 'ConstantValue');
+  if (!name) {
+    return '';
+  }
+  return access.attrs.Scope === 'LocalConstant' ? `#${name}` : `"${name}"`;
+}
+
 function formatAddress(access: XNode): string {
   const indirect = child(access, 'Indirect');
   if (indirect) {
@@ -54,6 +67,9 @@ export function formatAccess(access: XNode): string {
     case 'LiteralConstant':
     case 'TypedConstant':
       return formatConstant(access);
+    case 'GlobalConstant':
+    case 'LocalConstant':
+      return formatNamedConstant(access);
     case 'Address':
     case 'AddressConstant':
       return formatAddress(access);
