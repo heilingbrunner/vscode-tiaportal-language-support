@@ -1,5 +1,16 @@
 # Change Log
 
+## [0.0.6]
+
+- **Git diff in the TIA Viewer**: when a changed export is opened from Source Control or the Timeline and
+  the TIA Viewer is the editor of both sides, the previous and the current version are shown side by side
+  and the differences are marked, old version red and new version green: changed interface cells, added
+  and removed members and networks, changed titles and comments, changed code lines and changed LAD
+  elements (operands, contacts, coils, boxes, wires). Collapsed rows and sections with changes inside get
+  a marker. Both viewers scroll together. See the new "git diff" section of the README (optional
+  `.gitattributes` and `workbench.editorAssociations` setup).
+- README: new "Features" section.
+
 ## [0.0.5]
 
 - Fixed: LAD coils that feed a following element (e.g. a coil followed by a contact) lost the wire
