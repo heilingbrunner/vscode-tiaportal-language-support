@@ -106,5 +106,59 @@
     });
   }
 
+  // Keeps the two viewers of a version comparison scrolled alike: the extension relays these messages to the
+  // other viewer. `target` is '' for the page and the id of a network for its horizontally scrolling diagram.
+  var vscodeApi = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : undefined;
+  var applied = {};
+
+  function scroller(target) {
+    var section = target === '' ? null : document.getElementById(target);
+    return section ? section.querySelector('.scroll') : null;
+  }
+
+  function positionOf(target) {
+    var el = scroller(target);
+    return el ? { left: el.scrollLeft, top: el.scrollTop } : { left: window.scrollX, top: window.scrollY };
+  }
+
+  if (vscodeApi) {
+    window.addEventListener(
+      'scroll',
+      function (event) {
+        var node = event.target;
+        var section = node === document ? null : node.closest && node.closest('section.network');
+        var target = node === document ? '' : section ? section.id : null;
+        if (target === null) {
+          return;
+        }
+        var pos = positionOf(target);
+        var last = applied[target];
+        if (last && last.left === pos.left && last.top === pos.top) {
+          // the echo of a position the other viewer just set: do not send it back
+          delete applied[target];
+          return;
+        }
+        vscodeApi.postMessage({ type: 'scroll', target: target, left: pos.left, top: pos.top });
+      },
+      true,
+    );
+  }
+
+  window.addEventListener('message', function (event) {
+    var message = event.data;
+    if (!message || message.type !== 'scroll' || typeof message.target !== 'string') {
+      return;
+    }
+    var el = scroller(message.target);
+    if (el) {
+      el.scrollLeft = message.left;
+      el.scrollTop = message.top;
+    } else {
+      window.scrollTo(message.left, message.top);
+    }
+    // read back: the position may have been clamped because this version is shorter or narrower
+    applied[message.target] = positionOf(message.target);
+  });
+
   renumberRows();
 })();

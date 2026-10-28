@@ -4,9 +4,11 @@ import { parseBlock } from '../parser/blockParser';
 import { parseDataBlock } from '../parser/dbParser';
 import { parseAwl, parseScl } from '../parser/sclParser';
 import { parseUdtModel } from '../parser/udtParser';
+import { diffModels } from '../diff/modelDiff';
 import type { BlockModel } from '../model/types';
 import { renderBlockHtml, renderMessageHtml, type HtmlAssets } from '../render/html';
 import { withHighlighting } from '../render/sclHighlighter';
+import { gitSourceFile, type ComparePairs } from './comparePairs';
 import type { HighlighterService } from './highlighterService';
 import type { UdtIndex } from './udtIndex';
 
@@ -31,12 +33,31 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unexpected error';
 }
 
+/** Calls `onChange` when the file changes on disk; other schemes (for example `git:` revisions) are immutable. */
+function watchFile(uri: vscode.Uri, onChange: () => void): vscode.Disposable[] {
+  if (uri.scheme !== 'file') {
+    return [];
+  }
+  const folder = vscode.Uri.joinPath(uri, '..');
+  const name = uri.path.slice(uri.path.lastIndexOf('/') + 1);
+  // file names are matched as a glob: escape glob metacharacters such as [ ] { } * ?
+  const pattern = name.replace(/[*?{}[\]]/g, (c) => `[${c}]`);
+  const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, pattern));
+  return [watcher, watcher.onDidChange(onChange), watcher.onDidCreate(onChange)];
+}
+
+type ModelResult = { model: BlockModel } | { message: string };
+
 /** Read-only custom editor that shows a TIA Openness block export as a TIA-style view. */
 export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvider<BlockDocument> {
+  /** Open viewer panels by document uri. */
+  private readonly openPanels = new Map<string, vscode.WebviewPanel[]>();
+
   constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly udts: UdtIndex,
     private readonly highlighter: HighlighterService,
+    private readonly pairs: ComparePairs,
   ) {}
 
   openCustomDocument(uri: vscode.Uri): BlockDocument {
@@ -59,25 +80,91 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
 
     // subscriptions and the dispose handler exist before the first (async) render, so closing the panel
     // while it is still rendering cannot leak the watcher or write to a disposed webview
-    const folder = vscode.Uri.joinPath(document.uri, '..');
-    const name = document.uri.path.slice(document.uri.path.lastIndexOf('/') + 1);
-    // file names are matched as a glob: escape glob metacharacters such as [ ] { } * ?
-    const pattern = name.replace(/[*?{}[\]]/g, (c) => `[${c}]`);
-    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, pattern));
-    const subscriptions = [
-      watcher,
-      watcher.onDidChange(() => void render()),
-      watcher.onDidCreate(() => void render()),
-    ];
+    const rerender = (): void => void render();
+    const subscriptions: vscode.Disposable[] = watchFile(document.uri, rerender);
+    // the compared counterpart is watched too: this viewer's marks depend on its content
+    let peerWatch: { key: string; disposables: vscode.Disposable[] } | undefined;
+    const syncPeerWatch = (): void => {
+      const peer = this.pairs.get(document.uri);
+      const key = peer?.other.scheme === 'file' ? peer.other.toString() : '';
+      if (peerWatch?.key === key) {
+        return;
+      }
+      peerWatch?.disposables.forEach((d) => d.dispose());
+      peerWatch = peer && key ? { key, disposables: watchFile(peer.other, rerender) } : undefined;
+    };
+    syncPeerWatch();
+    subscriptions.push(
+      this.pairs.onDidChange((changed) => {
+        if (changed.toString() === document.uri.toString()) {
+          syncPeerWatch();
+          rerender();
+        }
+      }),
+    );
     if (usesUdts(document.uri)) {
       // a changed UDT can change the expanded members of this data block
-      subscriptions.push(this.udts.onDidChange(() => void render()));
+      subscriptions.push(this.udts.onDidChange(rerender));
     }
+    subscriptions.push(panel.webview.onDidReceiveMessage((message: unknown) => this.relayScroll(document.uri, message)));
+    const key = document.uri.toString();
+    this.openPanels.set(key, [...(this.openPanels.get(key) ?? []), panel]);
     panel.onDidDispose(() => {
       disposed = true;
       subscriptions.forEach((s) => s.dispose());
+      peerWatch?.disposables.forEach((d) => d.dispose());
+      const remaining = (this.openPanels.get(key) ?? []).filter((p) => p !== panel);
+      if (remaining.length > 0) {
+        this.openPanels.set(key, remaining);
+      } else {
+        this.openPanels.delete(key);
+        // closing one side ends the comparison, so the other viewer shows its file without marks again
+        this.pairs.release(document.uri);
+      }
     });
+    this.pairWithOpenRevision(document.uri);
     await render();
+  }
+
+  /**
+   * VS Code's own diff editor (for example "Open Changes" with this viewer as the editor for the file type) opens a
+   * `git:` revision and the file on disk without going through the compare command: pair them as soon as both are open.
+   */
+  private pairWithOpenRevision(uri: vscode.Uri): void {
+    const isRevision = uri.scheme === 'git';
+    const fileUri = isRevision ? gitSourceFile(uri) : uri;
+    if (!fileUri || (!isRevision && uri.scheme !== 'file') || this.pairs.get(uri)) {
+      return;
+    }
+    const fileKey = fileUri.toString();
+    if (isRevision) {
+      if (this.openPanels.has(fileKey) && !this.pairs.get(fileUri)) {
+        this.pairs.pair(uri, fileUri);
+      }
+      return;
+    }
+    for (const key of this.openPanels.keys()) {
+      const revision = vscode.Uri.parse(key);
+      if (gitSourceFile(revision)?.toString() === fileKey && !this.pairs.get(revision)) {
+        this.pairs.pair(revision, uri);
+        return;
+      }
+    }
+  }
+
+  /** Forwards a scroll position of one viewer of a comparison to the viewers of its counterpart. */
+  private relayScroll(uri: vscode.Uri, message: unknown): void {
+    const peer = this.pairs.get(uri);
+    if (!peer || typeof message !== 'object' || message === null) {
+      return;
+    }
+    const { type, target, left, top } = message as Record<string, unknown>;
+    if (type !== 'scroll' || typeof target !== 'string' || typeof left !== 'number' || typeof top !== 'number') {
+      return;
+    }
+    for (const other of this.openPanels.get(peer.other.toString()) ?? []) {
+      void other.webview.postMessage({ type, target, left, top });
+    }
   }
 
   private async buildHtml(uri: vscode.Uri, webview: vscode.Webview, mediaRoot: vscode.Uri): Promise<string> {
@@ -87,17 +174,35 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
       styleUri: webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'viewer.css')).toString(),
       scriptUri: webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'viewer.js')).toString(),
     };
+    const result = await this.readModel(uri);
+    if ('message' in result) {
+      return renderMessageHtml(result.message, assets);
+    }
+    const peer = this.pairs.get(uri);
+    if (!peer) {
+      return renderBlockHtml(result.model, assets);
+    }
+    // an unreadable counterpart only costs the marks: this file is still shown
+    const other = await this.readModel(peer.other);
+    if ('message' in other) {
+      return renderBlockHtml(result.model, assets);
+    }
+    const diffed = peer.side === 'old' ? diffModels(result.model, other.model) : diffModels(other.model, result.model);
+    return renderBlockHtml(peer.side === 'old' ? diffed.oldModel : diffed.newModel, assets);
+  }
+
+  private async readModel(uri: vscode.Uri): Promise<ModelResult> {
     try {
       const bytes = await vscode.workspace.fs.readFile(uri);
       if (bytes.byteLength > MAX_FILE_BYTES) {
-        return renderMessageHtml('This file is too large for the TIA viewer (limit: 50 MB).', assets);
+        return { message: 'This file is too large for the TIA viewer (limit: 50 MB).' };
       }
       const text = new TextDecoder('utf-8').decode(bytes);
       const model = await this.parse(uri, text);
       if (!model) {
-        return renderMessageHtml('This file is not a TIA Portal block export (FB, FC or OB).', assets);
+        return { message: 'This file is not a TIA Portal block export (FB, FC or OB).' };
       }
-      return renderBlockHtml(model, assets);
+      return { model };
     } catch (error: unknown) {
       const what = hasExtension(uri, '.db')
         ? 'TIA data block source'
@@ -108,7 +213,7 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
             : isStlFile(uri)
               ? 'TIA STL source'
               : 'TIA Openness XML';
-      return renderMessageHtml(`The file could not be read as ${what}: ${errorMessage(error)}`, assets);
+      return { message: `The file could not be read as ${what}: ${errorMessage(error)}` };
     }
   }
 

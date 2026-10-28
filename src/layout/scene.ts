@@ -1,8 +1,13 @@
+import type { DiffMark } from '../model/diff';
+
 export type Pt = [number, number];
 
 export type TextClass = 'operand' | 'pin' | 'title' | 'head' | 'type' | 'hint';
 
-export type SceneItem =
+/** `diff` is set by the version comparison; the layout itself never produces it. */
+export type SceneItem = SceneShape & { diff?: DiffMark };
+
+type SceneShape =
   /** `net` is the index of the logical connection a routed wire belongs to; unrelated nets must not cross. */
   | { t: 'line'; pts: Pt[]; cls: 'wire' | 'rail' | 'tick'; net?: number }
   | { t: 'text'; x: number; y: number; s: string; cls: TextClass; anchor: 'start' | 'middle' | 'end' }
