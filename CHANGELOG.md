@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased]
+## [0.0.8]
 
 - **LAD networks of SD format sources drawn as ladder diagrams**: `RUNG` / `wire#…` networks in `*.s7dcl` are
   shown like the LAD of Openness XML (contacts, coils, boxes with ENO to EN chaining, parallel branches and joins
