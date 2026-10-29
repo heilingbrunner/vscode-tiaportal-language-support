@@ -23,13 +23,13 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 | [AWL / STL](#awl--stl--statement-list)   | `.awl`, `.stl` | `source.tia.awl` |
 | [DB](#db--data-block)                    | `.db`          | `source.tia.db`  |
 | [UDT](#udt--user-defined-type)           | `.udt`         | `source.tia.udt` |
-| S7 Declaration                           | `.s7dcl`       | `source.tia.s7dcl` |
+| [S7DCL](#s7dcl--sd-format)               | `.s7dcl`       | `source.tia.s7dcl` |
 
 All grammars share the same scope suffix (`.tia`), so one theme rule such as `keyword.control.tia` applies to every language.
 
 ### SCL – Structured Control Language
 
-High-level, Pascal-like PLC language for function blocks, functions and organization blocks. This is the base grammar; the other three reuse parts of it.
+High-level, Pascal-like PLC language for function blocks, functions and organization blocks. This is the base grammar; the others reuse parts of it.
 
 - Block structure: `FUNCTION_BLOCK`, `FUNCTION`, `ORGANIZATION_BLOCK`, `DATA_BLOCK`, `TYPE` with their `END_` counterparts, the block name, and `REGION` / `END_REGION`.
 - Interface sections: `VAR`, `VAR_INPUT`, `VAR_OUTPUT`, `VAR_IN_OUT`, `VAR_TEMP`, `VAR_STAT` with `RETAIN` / `NON_RETAIN` / `CONSTANT`, `STRUCT`, `BEGIN`, and the header lines `TITLE`, `AUTHOR`, `FAMILY`, `NAME`, `VERSION`.
@@ -73,6 +73,16 @@ PLC data types (`TYPE "Name"` … `END_TYPE`).
 - The UDT grammar is the SCL grammar: `TYPE` header, `TITLE`, `VERSION`, nested `STRUCT … END_STRUCT`, member attribute pragmas, quoted UDT references, `Array[a..b] of …`, `String[n]` and comments.
 - Initial values in declarations: plain and typed literals (`:= 1.5`, `:= T#2s`, `:= BYTE#16#FF`) and aggregate initializers (`[(1, ()), (2, ())]`, `[8(1.0)]`).
 
+### S7DCL – SD Format
+
+SD format sources of TIA Portal V20 and later (`.s7dcl`, texts in a sibling `.s7res`). The grammar adds its own rules on top of the SCL grammar:
+
+- Attribute lists in braces (`S7_Optimized`, `S7_Access`, …) with their names and values, and text ids (`S7_MLC`, `S7_BlockTitle`).
+- Block and member structure, storage modifiers (`RETAIN`, …), type names and member targets of start values.
+- Hex literals and the global scope prefix.
+- LAD source text: `RUNG` and `wire#…` names.
+- Everything else falls back to the SCL grammar.
+
 ## TIA Viewer
 
 A read-only viewer for TIA Portal exports: Openness XML (`*.xml`) and the text sources `*.db`, `*.udt`, `*.s7dcl`, `*.scl`, `*.awl` and `*.stl`. Open a file with *Reopen Editor With… > TIA Viewer*, or run *TIA: Open Viewer to the Side*. Changes can be compared in the viewer too, see [git diff](#git-diff). The setting `tiaViewer.culture` (for example `de-DE`) selects the language of titles and comments.
@@ -94,7 +104,7 @@ The same view opens TIA data block sources (*Reopen Editor With… > TIA Viewer*
 
 *Reopen Editor With… > TIA Viewer* on a `.udt` file shows the table of TIA's type editor: name, data type, default value (type defaults greyed), accessible/writable/visible/setpoint flags, supervision and comment, without sections and without a retain column. Structs, arrays and referenced UDTs can be expanded; referenced types are looked up in the `*.udt` files of the workspace, and the view refreshes when one of them changes.
 
-### S7 declaration sources (`*.s7dcl` + `*.s7res`)
+### SD format sources (`*.s7dcl` + `*.s7res`)
 
 TIA Portal V20 and later exports types and blocks as `Name.s7dcl` with the texts in a sibling `Name.s7res` (same folder, same name). Open the `.s7dcl` with *Reopen Editor With… > TIA Viewer*:
 
@@ -103,7 +113,7 @@ TIA Portal V20 and later exports types and blocks as `Name.s7dcl` with the texts
 - Below the block, a collapsed **Texts (.s7res)** table lists every id of the `.s7res` with its text. Texts that nothing refers to are greyed, ids the source uses that the `.s7res` does not contain are marked red.
 - Opening the `.s7res` itself with the TIA Viewer shows the `.s7dcl` it belongs to, so the pair works from either file.
 - Types are looked up in the `*.udt` and `*.s7dcl` files of the workspace. The view refreshes when the `.s7dcl` or its `.s7res` changes.
-- `FUNCTION_BLOCK`, `FUNCTION` and `ORGANIZATION_BLOCK` show the interface table (like an `.scl` source) above their code. `S7_EditorMode := "SCL"` marks a pure SCL block, shown with line numbers, highlighting and the `REGION` outline. A block with `S7_PreferredLanguage := "LAD"` is shown network by network, each following its own `S7_Language`: SCL networks as highlighted code, LAD networks as their syntax-highlighted source text (`RUNG` / `wire#…`, not drawn as a ladder diagram yet), titles and comments from the `.s7res`.
+- `FUNCTION_BLOCK`, `FUNCTION` and `ORGANIZATION_BLOCK` show the interface table (like an `.scl` source) above their code. `S7_EditorMode := "SCL"` marks a pure SCL block, shown with line numbers, highlighting and the `REGION` outline. A block with `S7_PreferredLanguage := "LAD"` is shown network by network, each following its own `S7_Language`: SCL networks as highlighted code, LAD networks drawn as ladder diagrams like those of Openness XML (a network the viewer cannot read stays syntax-highlighted source text, `RUNG` / `wire#…`), titles and comments from the `.s7res`.
 
 ### SCL sources (`*.scl`)
 
@@ -129,6 +139,8 @@ Open a change of an exported file (`*.db`, `*.udt`, `*.s7dcl`, `*.scl`, `*.awl`,
   # TIA Portal exports: stable line endings, so a diff shows real changes only
   *.db   text eol=crlf
   *.udt  text eol=crlf
+  *.s7dcl text eol=crlf
+  *.s7res text eol=crlf
   *.scl  text eol=crlf
   *.awl  text eol=crlf
   *.stl  text eol=crlf
@@ -143,6 +155,8 @@ Open a change of an exported file (`*.db`, `*.udt`, `*.s7dcl`, `*.scl`, `*.awl`,
   "workbench.editorAssociations": {
     "*.db": "tia.viewer",
     "*.udt": "tia.viewer",
+    "*.s7dcl": "tia.viewer",
+    "*.s7res": "tia.viewer",
     "*.scl": "tia.viewer",
     "*.awl": "tia.viewer",
     "*.stl": "tia.viewer",
@@ -170,6 +184,10 @@ npm run tokenize -- --dir <samples> --ext <scl|awl|db|udt> [--strict] [--top 25]
 
 ## Resources
 
+### Export Formats
+
+- [Overview of Export Formats](https://docs.tia.siemens.cloud/r/en-us/v21/using-tia-portal-version-control-interface/settings-for-the-version-control-interface/setting-the-export-format/overview-of-export-formats)
+
 ### AWL/STL – Statement List
 
 - [STL programming language](https://docs.tia.siemens.cloud/r/en-us/v21/creating-stl-programs-s7-300-s7-400-s7-1500/stl-basics-s7-300-s7-400-s7-1500/stl-programming-language-s7-300-s7-400-s7-1500)
@@ -189,3 +207,7 @@ npm run tokenize -- --dir <samples> --ext <scl|awl|db|udt> [--strict] [--top 25]
 ### DB – Data Block
 
 - [Basic Principles for Programming of Data Blocks](https://docs.tia.siemens.cloud/r/en-us/v21/programming-data-blocks/basic-principles-for-programming-of-data-blocks)
+
+### SD Format
+
+- [Exporting and Importing Blocks in Simatic SD Format](https://docs.tia.siemens.cloud/r/en-us/v21/creating-and-managing-blocks/exporting-and-importing-blocks-in-simatic-sd-format-s7-1200-s7-1500-s7-1200-g2)

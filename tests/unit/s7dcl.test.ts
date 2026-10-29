@@ -313,6 +313,9 @@ FUNCTION_BLOCK "FB_Mixed"
 END_FUNCTION_BLOCK
 `;
 
+/** `LAD_BLOCK` with a coil the LAD parser cannot read, so that network stays source text. */
+const LAD_UNDRAWABLE = LAD_BLOCK.replace('Coil( #mb_Out )', 'Coil #mb_Out');
+
 describe('s7dcl FUNCTION / FUNCTION_BLOCK / ORGANIZATION_BLOCK', () => {
   it('shows a pure SCL block like an .scl source: interface table and code with outline', () => {
     const model = parseS7dclModel(SCL_FUNCTION, parseS7res(RES(['MLC_begin', 'Begin area'])));
@@ -329,12 +332,11 @@ describe('s7dcl FUNCTION / FUNCTION_BLOCK / ORGANIZATION_BLOCK', () => {
     const model = parseS7dclModel(LAD_BLOCK, parseS7res(RES(['MLC_blk', 'Block title'], ['MLC_t1', 'Enable'], ['MLC_c1', 'Comment 1'])));
     expect(model).toMatchObject({ kind: 'FB', name: 'FB_Mixed', language: 'LAD', title: 'Block title', code: undefined });
     expect(model.networks.map((n) => [n.index, n.language, n.body.kind])).toEqual([
-      [1, 'LAD', 'code'],
+      [1, 'LAD', 'lad'],
       [2, 'LAD', 'empty'],
       [3, 'SCL', 'code'],
     ]);
     expect(model.networks[0]).toMatchObject({ title: 'Enable', comment: 'Comment 1' });
-    expect(model.networks[0]?.body).toMatchObject({ lines: ['RUNG wire#powerrail', '    Contact( #Ib_Enable )', '    Coil( #mb_Out )', 'END_RUNG'] });
     expect(model.networks[2]?.body).toMatchObject({ lines: ['#mi_Count := #mi_Count + 1;'] });
   });
 
@@ -352,8 +354,14 @@ describe('s7dcl FUNCTION / FUNCTION_BLOCK / ORGANIZATION_BLOCK', () => {
   it('renders the page of a block', () => {
     const html = renderBlockHtml(parseS7dclModel(LAD_BLOCK), assets);
     expect(html).toContain('FB_Mixed');
-    expect(html).toContain('Contact(');
+    expect(html).toContain('<svg class="lad"');
     expect(html).toContain('(empty network)');
+  });
+
+  it('shows the source of a LAD network that cannot be drawn', () => {
+    const html = renderBlockHtml(parseS7dclModel(LAD_UNDRAWABLE), assets);
+    expect(html).toContain('Contact(');
+    expect(html).not.toContain('<svg class="lad"');
   });
 
   it('offers one collapse/expand toggle with both icons when there is something to fold', () => {
@@ -410,7 +418,7 @@ describe('s7dcl syntax highlighting in the viewer', () => {
   });
 
   it('highlights the LAD networks of a model and leaves other networks to their own grammar', () => {
-    const model = withHighlighting(parseS7dclModel(LAD_BLOCK), { s7dcl: highlighter });
+    const model = withHighlighting(parseS7dclModel(LAD_UNDRAWABLE), { s7dcl: highlighter });
     const [lad, , scl] = model.networks.map((n) => n.body);
     expect(lad?.kind === 'code' && lad.tokens?.[0]).toEqual([
       { text: 'RUNG', cls: 'c-keyword' },

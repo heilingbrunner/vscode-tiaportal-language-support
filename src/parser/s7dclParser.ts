@@ -1,9 +1,11 @@
+import { layoutLad } from '../layout/ladLayout';
 import type { BlockKind, BlockModel, NetworkModel } from '../model/types';
 import { Cursor } from './dbCursor';
 import { parseAssignments } from './dbParser';
 import { parseDeclaredType, parseMembers, type RawMember, type TypeNode } from './declParser';
 import { buildMember, createContext, ROOT_FLAGS, type UdtResolver } from './memberBuilder';
 import type { TextTable } from './s7res';
+import { parseSdLad } from './sdLadParser';
 import { BLOCK_KINDS, buildSections, readSection, type SectionGroup } from './sclParser';
 import { analyzeStructure, scanLine } from './sclStructure';
 
@@ -272,8 +274,17 @@ function readNetworks(text: string): RawNetwork[] {
 function networkModel(raw: RawNetwork, index: number, headerLanguage: string, texts: TextTable | undefined): NetworkModel {
   const language = (raw.attributes.s7_language ?? headerLanguage).toUpperCase();
   const isEmpty = raw.lines.length === 0 || (language === 'LAD' && raw.lines.join(' ').replace(/\s+/g, ' ').trim() === EMPTY_LAD_NETWORK);
-  // SCL and LAD source are both shown as numbered code (highlighted by the matching grammar)
-  const body: NetworkModel['body'] = isEmpty ? { kind: 'empty' } : { kind: 'code', language, lines: raw.lines };
+  let body: NetworkModel['body'] = { kind: 'code', language, lines: raw.lines };
+  if (isEmpty) {
+    body = { kind: 'empty' };
+  } else if (language === 'LAD') {
+    // drawn as a ladder diagram; what the parser does not understand stays source text (highlighted by the grammar)
+    try {
+      body = { kind: 'lad', scene: layoutLad(parseSdLad(raw.lines)) };
+    } catch {
+      body = { kind: 'code', language, lines: raw.lines };
+    }
+  }
   return {
     index,
     title: textOf(texts, raw.attributes.s7_networktitle),
