@@ -1,8 +1,14 @@
 # Change Log
 
+## [0.0.8]
+
+- **LAD networks of SD format sources drawn as ladder diagrams**: `RUNG` / `wire#…` networks in `*.s7dcl` are
+  shown like the LAD of Openness XML (contacts, coils, boxes with ENO to EN chaining, parallel branches and joins
+  by `wire#`, comparators, timers, calls). A network the viewer cannot read still shows its source text.
+
 ## [0.0.7]
 
-- **S7 declaration sources in the TIA Viewer**: `*.s7dcl` files (TIA Portal V20+) open in the viewer, with
+- **SD format sources in the TIA Viewer**: `*.s7dcl` files (TIA Portal V20+) open in the viewer, with
   the texts of the sibling `*.s7res`. `TYPE` is shown like a `.udt`, `DATA_BLOCK` like a `.db`: comments,
   block title and comment from the `.s7res`, access/visibility/setpoint attributes as flags, retain and
   optimized access from the header, start values after `END_VAR`, instance and array data blocks. UDT
