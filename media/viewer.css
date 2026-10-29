@@ -198,6 +198,39 @@ table.interface input.off {
   visibility: hidden;
 }
 
+/* Read-only flags drawn by hand: the native disabled checkbox is washed out in both light and dark themes. */
+table.interface input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  vertical-align: middle;
+  cursor: default;
+  border: 1px solid var(--vscode-checkbox-border, color-mix(in srgb, var(--vscode-editor-foreground) 55%, transparent));
+  border-radius: 3px;
+  background: var(--vscode-checkbox-background, transparent);
+}
+
+table.interface input[type='checkbox']:checked {
+  border-color: var(--vscode-button-background, #0e639c);
+  background: var(--vscode-button-background, #0e639c);
+}
+
+table.interface input[type='checkbox']:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 3px;
+  height: 7px;
+  border: solid var(--vscode-button-foreground, #fff);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
 td.name[data-depth='2'] { padding-left: 24px; }
 td.name[data-depth='3'] { padding-left: 40px; }
 td.name[data-depth='4'] { padding-left: 56px; }

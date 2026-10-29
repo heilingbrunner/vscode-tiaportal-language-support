@@ -272,11 +272,8 @@ function readNetworks(text: string): RawNetwork[] {
 function networkModel(raw: RawNetwork, index: number, headerLanguage: string, texts: TextTable | undefined): NetworkModel {
   const language = (raw.attributes.s7_language ?? headerLanguage).toUpperCase();
   const isEmpty = raw.lines.length === 0 || (language === 'LAD' && raw.lines.join(' ').replace(/\s+/g, ' ').trim() === EMPTY_LAD_NETWORK);
-  const body: NetworkModel['body'] = isEmpty
-    ? { kind: 'empty' }
-    : language === 'SCL'
-      ? { kind: 'code', language, lines: raw.lines }
-      : { kind: 'text', language, lines: raw.lines };
+  // SCL and LAD source are both shown as numbered code (highlighted by the matching grammar)
+  const body: NetworkModel['body'] = isEmpty ? { kind: 'empty' } : { kind: 'code', language, lines: raw.lines };
   return {
     index,
     title: textOf(texts, raw.attributes.s7_networktitle),

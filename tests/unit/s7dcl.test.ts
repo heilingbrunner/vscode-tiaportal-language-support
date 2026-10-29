@@ -1,13 +1,15 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { parseDataBlock } from '../../src/parser/dbParser';
 import type { UdtResolver } from '../../src/parser/memberBuilder';
 import { parseS7dclModel, parseS7dclUdt, s7dclBlockKeyword } from '../../src/parser/s7dclParser';
 import { parseS7res } from '../../src/parser/s7res';
 import { parseUdt, parseUdtModel } from '../../src/parser/udtParser';
 import { renderBlockHtml } from '../../src/render/html';
+import { createHighlighter, withHighlighting, type HighlightLanguage, type SclHighlighter } from '../../src/render/sclHighlighter';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const fixture = (name: string): string => readFileSync(join(root, 'fixtures', name), 'utf-8');
@@ -327,7 +329,7 @@ describe('s7dcl FUNCTION / FUNCTION_BLOCK / ORGANIZATION_BLOCK', () => {
     const model = parseS7dclModel(LAD_BLOCK, parseS7res(RES(['MLC_blk', 'Block title'], ['MLC_t1', 'Enable'], ['MLC_c1', 'Comment 1'])));
     expect(model).toMatchObject({ kind: 'FB', name: 'FB_Mixed', language: 'LAD', title: 'Block title', code: undefined });
     expect(model.networks.map((n) => [n.index, n.language, n.body.kind])).toEqual([
-      [1, 'LAD', 'text'],
+      [1, 'LAD', 'code'],
       [2, 'LAD', 'empty'],
       [3, 'SCL', 'code'],
     ]);
@@ -354,14 +356,74 @@ describe('s7dcl FUNCTION / FUNCTION_BLOCK / ORGANIZATION_BLOCK', () => {
     expect(html).toContain('(empty network)');
   });
 
-  it('offers one collapse/expand toggle with both icons only when a block has several networks', () => {
+  it('offers one collapse/expand toggle with both icons when there is something to fold', () => {
     const html = renderBlockHtml(parseS7dclModel(LAD_BLOCK), assets);
-    expect(html.match(/data-networks-toggle/g)).toHaveLength(1);
+    expect(html.match(/data-toggle-all/g)).toHaveLength(1);
     expect(html).toContain('data-action="collapse"');
-    expect(html).toContain('aria-label="Collapse all networks"');
+    expect(html).toContain('aria-label="Collapse all"');
     expect(html).toContain('class="icon-collapse"');
     expect(html).toContain('class="icon-expand"');
-    expect(renderBlockHtml(parseS7dclModel(SCL_FUNCTION), assets)).not.toContain('data-networks-toggle');
+    // interface sections with members fold too, so a single SCL block has the toggle as well
+    expect(renderBlockHtml(parseS7dclModel(SCL_FUNCTION), assets)).toContain('data-toggle-all');
+  });
+
+  it('has no toggle without foldable sections and with at most one network, or in a UDT view', () => {
+    const empty = '{ S7_PreferredLanguage := "LAD" }\nFUNCTION_BLOCK "F"\n{ S7_Language := "SCL" }\nNETWORK\nEND_NETWORK\nEND_FUNCTION_BLOCK';
+    expect(renderBlockHtml(parseS7dclModel(empty), assets)).not.toContain('data-toggle-all');
+    expect(renderBlockHtml(parseS7dclModel(VALVE_S7DCL, texts, resolveS7dcl), assets)).not.toContain('data-toggle-all');
+  });
+});
+
+const readGrammar = async (language: HighlightLanguage): Promise<string> =>
+  readFileSync(join(root, 'syntaxes', `${language}.tmLanguage.json`), 'utf-8');
+const readWasm = async (): Promise<ArrayBuffer> => {
+  const bytes = readFileSync(createRequire(import.meta.url).resolve('vscode-oniguruma/release/onig.wasm'));
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+};
+
+describe('s7dcl syntax highlighting in the viewer', () => {
+  let highlighter: SclHighlighter;
+  beforeAll(async () => {
+    highlighter = await createHighlighter('s7dcl', { readGrammar, readWasm });
+  });
+  // neighbouring tokens of one class are merged (`{ S7_MLC` is one token), so look for the token containing the text
+  const classOf = (line: string, text: string): string | undefined =>
+    highlighter.tokenize([line])[0]?.find((t) => t.text.includes(text))?.cls;
+
+  it('highlights rungs: keywords, wires, instructions and operands', () => {
+    const lines = ['RUNG wire#powerrail', '    Contact( "CMN_Workdata".Basic.Info.SimulationActivated )', '    Coil( #Bits.bEnable )', 'END_RUNG'];
+    const [rung, contact, coil, end] = highlighter.tokenize(lines);
+    expect(rung?.find((t) => t.text === 'RUNG')?.cls).toBe('c-keyword');
+    expect(rung?.find((t) => t.text === 'wire#powerrail')?.cls).toBe('c-label');
+    expect(contact?.find((t) => t.text === 'Contact')?.cls).toBe('c-function');
+    expect(contact?.find((t) => t.text === '"CMN_Workdata"')?.cls).toBe('c-global');
+    expect(coil?.find((t) => t.text === 'Coil')?.cls).toBe('c-function');
+    expect(coil?.find((t) => t.text === '#Bits')?.cls).toBe('c-local');
+    expect(end?.[0]).toEqual({ text: 'END_RUNG', cls: 'c-keyword' });
+  });
+
+  it('highlights attribute blocks, structure keywords and global scope names', () => {
+    expect(classOf('        { S7_MLC := "MLC_1" }', 'S7_MLC')).toBe('c-pragma');
+    expect(classOf('        { S7_MLC := "MLC_1" }', '"MLC_1"')).toBe('c-string');
+    expect(classOf('    NETWORK', 'NETWORK')).toBe('c-keyword');
+    expect(classOf('        a : Array[0.._.NoOfX] of _.Module;', '_.')).toBe('c-keyword');
+  });
+
+  it('highlights the LAD networks of a model and leaves other networks to their own grammar', () => {
+    const model = withHighlighting(parseS7dclModel(LAD_BLOCK), { s7dcl: highlighter });
+    const [lad, , scl] = model.networks.map((n) => n.body);
+    expect(lad?.kind === 'code' && lad.tokens?.[0]).toEqual([
+      { text: 'RUNG', cls: 'c-keyword' },
+      { text: ' ', cls: '' },
+      { text: 'wire#powerrail', cls: 'c-label' },
+    ]);
+    expect(scl?.kind === 'code' && scl.tokens).toBeUndefined();
+  });
+
+  it('keeps the text of every line intact for the whole local corpus sample', () => {
+    const lines = LAD_BLOCK.split('\n');
+    const tokens = highlighter.tokenize(lines);
+    expect(tokens.map((line) => line.map((t) => t.text).join(''))).toEqual(lines);
   });
 });
 
