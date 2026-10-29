@@ -84,44 +84,78 @@
       var collapsed = caret.classList.toggle('collapsed');
       setRowsHidden(caret.closest('table'), caret.dataset.toggle, collapsed);
       renumberRows();
+      syncToggleAll();
       return;
     }
-    var toggle = target.closest('button[data-networks-toggle]');
+    var toggle = target.closest('button[data-toggle-all]');
     if (toggle) {
-      var collapseAll = toggle.dataset.action === 'collapse';
-      document.querySelectorAll('section.network').forEach(function (section) {
-        section.classList.toggle('collapsed', collapseAll);
-        var sectionCaret = section.querySelector('h2 .caret');
-        if (sectionCaret) {
-          sectionCaret.classList.toggle('collapsed', collapseAll);
-        }
-      });
-      syncNetworkToggle();
+      setAllCollapsed(toggle.dataset.action === 'collapse');
       return;
     }
     var heading = target.closest('h2[data-toggle-network]');
     if (heading) {
       heading.parentElement.classList.toggle('collapsed');
       heading.querySelector('.caret').classList.toggle('collapsed');
-      syncNetworkToggle();
+      syncToggleAll();
     }
   });
 
-  // The header button offers the action that applies next: expand once every network is folded, else collapse.
-  function syncNetworkToggle() {
-    var button = document.querySelector('button[data-networks-toggle]');
+  // the carets of the interface sections (Input, Output, ...); sections without members have nothing to fold
+  function sectionCarets() {
+    return Array.prototype.slice.call(
+      document.querySelectorAll('table.interface tr.section:not(.empty) .caret[data-toggle]'),
+    );
+  }
+
+  function networkSections() {
+    return Array.prototype.slice.call(document.querySelectorAll('section.network'));
+  }
+
+  // Folds or unfolds the interface sections and all networks at once; nested members keep their own state.
+  function setAllCollapsed(collapsed) {
+    sectionCarets().forEach(function (caret) {
+      caret.classList.toggle('collapsed', collapsed);
+      setRowsHidden(caret.closest('table'), caret.dataset.toggle, collapsed);
+    });
+    renumberRows();
+    networkSections().forEach(function (section) {
+      section.classList.toggle('collapsed', collapsed);
+      var networkCaret = section.querySelector('h2 .caret');
+      if (networkCaret) {
+        networkCaret.classList.toggle('collapsed', collapsed);
+      }
+    });
+    syncToggleAll();
+  }
+
+  // The header button offers the action that applies next: expand once every section and network is folded.
+  function syncToggleAll() {
+    var button = document.querySelector('button[data-toggle-all]');
     if (!button) {
       return;
     }
-    var sections = Array.prototype.slice.call(document.querySelectorAll('section.network'));
-    var allCollapsed = sections.length > 0 && sections.every(function (section) {
-      return section.classList.contains('collapsed');
-    });
-    var label = allCollapsed ? 'Expand all networks' : 'Collapse all networks';
+    var folded = sectionCarets()
+      .map(function (caret) {
+        return caret.classList.contains('collapsed');
+      })
+      .concat(
+        networkSections().map(function (section) {
+          return section.classList.contains('collapsed');
+        }),
+      );
+    var allCollapsed =
+      folded.length > 0 &&
+      folded.every(function (isFolded) {
+        return isFolded;
+      });
+    var label = allCollapsed ? 'Expand all' : 'Collapse all';
     button.dataset.action = allCollapsed ? 'expand' : 'collapse';
     button.title = label;
     button.setAttribute('aria-label', label);
   }
+
+  // an interface that starts fully folded (function blocks) already offers "expand all"
+  syncToggleAll();
 
   var slider = document.getElementById('zoom');
   var output = document.getElementById('zoom-out');

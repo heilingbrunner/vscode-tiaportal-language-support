@@ -202,7 +202,7 @@ const COLLAPSE_ICON = 'M4 3.5 8 7l4-3.5M4 12.5 8 9l4 3.5';
 const EXPAND_ICON = 'M4 6.5 8 3l4 3.5M4 9.5 8 13l4-3.5';
 
 /**
- * The header button that folds or unfolds all networks. It carries both icons (two chevrons pointing inwards to
+ * The header button that folds or unfolds all interface sections and networks. It carries both icons (two chevrons pointing inwards to
  * collapse, outwards to expand); the script switches `data-action`, which decides the visible one, and the label.
  */
 function networkToggle(): string {
@@ -210,8 +210,8 @@ function networkToggle(): string {
     `<svg class="${cls}" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">` +
     `<path d="${path}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   return (
-    `<button type="button" class="net-toggle" data-networks-toggle data-action="collapse" ` +
-    `title="Collapse all networks" aria-label="Collapse all networks">` +
+    `<button type="button" class="net-toggle" data-toggle-all data-action="collapse" ` +
+    `title="Collapse all" aria-label="Collapse all">` +
     `${icon('icon-collapse', COLLAPSE_ICON)}${icon('icon-expand', EXPAND_ICON)}</button>`
   );
 }
@@ -253,7 +253,9 @@ export function renderBlockHtml(model: BlockModel, assets: HtmlAssets): string {
     model.networks.some((n) => n.body.kind === 'lad')
       ? '<label class="zoom">Zoom <input id="zoom" type="range" min="50" max="200" step="10" value="100"><output id="zoom-out">100%</output></label>'
       : '';
-  const networkActions = model.networks.length > 1 ? networkToggle() : '';
+  // a UDT table lists its members without section rows; elsewhere the sections of the interface fold too
+  const hasFoldableSections = model.kind !== 'UDT' && model.sections.some((s) => s.members.length > 0);
+  const networkActions = model.networks.length > 1 || hasFoldableSections ? networkToggle() : '';
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${csp}">

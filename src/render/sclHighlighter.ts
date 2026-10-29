@@ -2,11 +2,12 @@ import * as oniguruma from 'vscode-oniguruma';
 import * as textmate from 'vscode-textmate';
 import type { BlockModel, CodeToken } from '../model/types';
 
-export type HighlightLanguage = 'scl' | 'awl';
+export type HighlightLanguage = 'scl' | 'awl' | 's7dcl';
 
 const SCOPE_NAMES: Record<HighlightLanguage, string> = {
   scl: 'source.tia.scl',
   awl: 'source.tia.awl',
+  s7dcl: 'source.tia.s7dcl',
 };
 /**
  * Lines fed to the grammar before the code: the AWL grammar only recognises instructions after it has
@@ -15,6 +16,7 @@ const SCOPE_NAMES: Record<HighlightLanguage, string> = {
 const PREAMBLES: Record<HighlightLanguage, readonly string[]> = {
   scl: [],
   awl: ['BEGIN'],
+  s7dcl: [],
 };
 const MAX_LINES = 50_000;
 /** Per-line tokenizing budget in milliseconds; a line that exceeds it is shown unhighlighted. */
@@ -31,10 +33,11 @@ export interface SclHighlighter {
   tokenize(lines: readonly string[]): CodeToken[][];
 }
 
-/** The highlighters available to a view: `scl` for SCL code, `awl` for STL networks. */
+/** The highlighters available to a view: `scl` for SCL code, `awl` for STL networks, `s7dcl` for LAD source text. */
 export interface HighlighterSet {
   scl?: SclHighlighter;
   awl?: SclHighlighter;
+  s7dcl?: SclHighlighter;
 }
 
 /** First matching rule wins; scopes are checked from the most specific (last) one. */
@@ -45,6 +48,10 @@ const CLASS_RULES: Array<[prefix: string, cls: string]> = [
   ['keyword.control', 'c-keyword'],
   ['keyword.other.pragma', 'c-pragma'],
   ['meta.pragma', 'c-pragma'],
+  // `.s7dcl`: `{ S7_... := "..." }` attribute blocks and `wire#` names
+  ['meta.attributes', 'c-pragma'],
+  ['entity.other.attribute-name', 'c-pragma'],
+  ['constant.other.wire', 'c-label'],
   ['keyword.operator.word', 'c-keyword'],
   ['keyword.operator.logical', 'c-instruction'],
   ['keyword.operator', 'c-operator'],
@@ -159,7 +166,8 @@ export function withHighlighting(model: BlockModel, highlighters: HighlighterSet
     if (body.kind !== 'code') {
       return network;
     }
-    const highlighter = body.language === 'STL' ? highlighters.awl : highlighters.scl;
+    const highlighter =
+      body.language === 'STL' ? highlighters.awl : body.language === 'LAD' ? highlighters.s7dcl : highlighters.scl;
     return highlighter ? { ...network, body: { ...body, tokens: highlighter.tokenize(body.lines) } } : network;
   });
   return { ...model, code, networks };

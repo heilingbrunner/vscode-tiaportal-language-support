@@ -12,7 +12,7 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 - **`SCL` / `STL` code** with line numbers, folding and a `REGION` outline.
 - **TIA Viewer**: read-only, TIA-style view of Openness XML and `.db`, `.udt`, `.s7dcl` (with its `.s7res`), `.scl`, `.awl`, `.stl` files.
 - **Interface table** with expandable structs, arrays and UDT members.
-- **Collapsible networks** (click a network heading, or use *Collapse all* / *Expand all* in the header) and a culture setting for titles and comments.
+- **Collapsible networks** (click a network heading, or use the collapse/expand all button in the header, which also folds the interface sections) and a culture setting for titles and comments.
 - **git diff**: both versions side by side, red/green marks, synchronized scrolling.
 
 ## Languages
@@ -103,7 +103,7 @@ TIA Portal V20 and later exports types and blocks as `Name.s7dcl` with the texts
 - Below the block, a collapsed **Texts (.s7res)** table lists every id of the `.s7res` with its text. Texts that nothing refers to are greyed, ids the source uses that the `.s7res` does not contain are marked red.
 - Opening the `.s7res` itself with the TIA Viewer shows the `.s7dcl` it belongs to, so the pair works from either file.
 - Types are looked up in the `*.udt` and `*.s7dcl` files of the workspace. The view refreshes when the `.s7dcl` or its `.s7res` changes.
-- `FUNCTION_BLOCK`, `FUNCTION` and `ORGANIZATION_BLOCK` show the interface table (like an `.scl` source) above their code. `S7_EditorMode := "SCL"` marks a pure SCL block, shown with line numbers, highlighting and the `REGION` outline. A block with `S7_PreferredLanguage := "LAD"` is shown network by network, each following its own `S7_Language`: SCL networks as highlighted code, LAD networks as their source text (`RUNG` / `wire#…`, not drawn as a ladder diagram yet), titles and comments from the `.s7res`.
+- `FUNCTION_BLOCK`, `FUNCTION` and `ORGANIZATION_BLOCK` show the interface table (like an `.scl` source) above their code. `S7_EditorMode := "SCL"` marks a pure SCL block, shown with line numbers, highlighting and the `REGION` outline. A block with `S7_PreferredLanguage := "LAD"` is shown network by network, each following its own `S7_Language`: SCL networks as highlighted code, LAD networks as their syntax-highlighted source text (`RUNG` / `wire#…`, not drawn as a ladder diagram yet), titles and comments from the `.s7res`.
 
 ### SCL sources (`*.scl`)
 
