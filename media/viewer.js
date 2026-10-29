@@ -86,12 +86,42 @@
       renumberRows();
       return;
     }
+    var toggle = target.closest('button[data-networks-toggle]');
+    if (toggle) {
+      var collapseAll = toggle.dataset.action === 'collapse';
+      document.querySelectorAll('section.network').forEach(function (section) {
+        section.classList.toggle('collapsed', collapseAll);
+        var sectionCaret = section.querySelector('h2 .caret');
+        if (sectionCaret) {
+          sectionCaret.classList.toggle('collapsed', collapseAll);
+        }
+      });
+      syncNetworkToggle();
+      return;
+    }
     var heading = target.closest('h2[data-toggle-network]');
     if (heading) {
       heading.parentElement.classList.toggle('collapsed');
       heading.querySelector('.caret').classList.toggle('collapsed');
+      syncNetworkToggle();
     }
   });
+
+  // The header button offers the action that applies next: expand once every network is folded, else collapse.
+  function syncNetworkToggle() {
+    var button = document.querySelector('button[data-networks-toggle]');
+    if (!button) {
+      return;
+    }
+    var sections = Array.prototype.slice.call(document.querySelectorAll('section.network'));
+    var allCollapsed = sections.length > 0 && sections.every(function (section) {
+      return section.classList.contains('collapsed');
+    });
+    var label = allCollapsed ? 'Expand all networks' : 'Collapse all networks';
+    button.dataset.action = allCollapsed ? 'expand' : 'collapse';
+    button.title = label;
+    button.setAttribute('aria-label', label);
+  }
 
   var slider = document.getElementById('zoom');
   var output = document.getElementById('zoom-out');

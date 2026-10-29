@@ -94,8 +94,23 @@ export interface TypeInfo {
   version: string;
 }
 
+/** One text of the `.s7res` that belongs to an `.s7dcl`; `used` is false when nothing in the source refers to it. */
+export interface TextEntry {
+  id: string;
+  text: string;
+  used: boolean;
+}
+
+/** The multilingual texts of an `.s7res`, and the text ids the source uses that the file does not contain. */
+export interface TextsInfo {
+  entries: TextEntry[];
+  missing: string[];
+}
+
 export interface BlockModel {
   kind: BlockKind;
+  /** Present for blocks read from an `.s7dcl` that has an `.s7res`. */
+  texts?: TextsInfo;
   /** Present for `kind === 'DB'`. */
   dataBlock?: DataBlockInfo;
   /** Present for `kind === 'UDT'`. */

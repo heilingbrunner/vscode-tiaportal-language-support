@@ -115,6 +115,81 @@ table.interface td.start.default {
   padding: 12px 16px;
 }
 
+/* a direct child of the header: pushed to its right edge */
+.net-toggle {
+  margin-left: auto;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  color: var(--vscode-icon-foreground, var(--vscode-editor-foreground));
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.net-toggle:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--tia-head));
+}
+
+.net-toggle:active {
+  background: var(--vscode-toolbar-activeBackground, var(--tia-head));
+}
+
+.net-toggle:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+/* the icon shows the action a click performs: chevrons inwards to collapse, outwards to expand */
+.net-toggle[data-action='collapse'] .icon-expand,
+.net-toggle[data-action='expand'] .icon-collapse {
+  display: none;
+}
+
+details.texts {
+  margin: 16px 12px 0;
+}
+
+details.texts > summary {
+  cursor: pointer;
+  color: var(--tia-muted);
+}
+
+table.texts {
+  border-collapse: collapse;
+  margin-top: 6px;
+}
+
+table.texts th,
+table.texts td {
+  padding: 2px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+table.texts td.id {
+  font-family: var(--vscode-editor-font-family, monospace);
+  white-space: nowrap;
+}
+
+table.texts td.text {
+  white-space: pre-wrap;
+}
+
+table.texts tr.unused td {
+  color: var(--tia-muted);
+}
+
+table.texts tr.missing td {
+  color: var(--tia-del);
+}
+
 table.interface td.chk {
   text-align: center;
 }

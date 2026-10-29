@@ -29,7 +29,9 @@
         "stl",
         "db",
         "udt",
-        "scl"
+        "scl",
+        "s7dcl",
+        "s7res"
     ],
     "main": "./dist/extension.js",
     "scripts": {
@@ -74,6 +76,12 @@
                     },
                     {
                         "filenamePattern": "*.stl"
+                    },
+                    {
+                        "filenamePattern": "*.s7dcl"
+                    },
+                    {
+                        "filenamePattern": "*.s7res"
                     }
                 ],
                 "priority": "option"
@@ -89,14 +97,14 @@
             "editor/title": [
                 {
                     "command": "tia.openViewer",
-                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl",
+                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl || resourceExtname == .s7dcl || resourceExtname == .s7res",
                     "group": "navigation"
                 }
             ],
             "explorer/context": [
                 {
                     "command": "tia.openViewer",
-                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl",
+                    "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl || resourceExtname == .s7dcl || resourceExtname == .s7res",
                     "group": "navigation"
                 }
             ]
@@ -115,7 +123,7 @@
             {
                 "id": "scl",
                 "aliases": [
-                    "TIA Portal: Structured Control Language",
+                    "TIA Portal: SCL",
                     "scl"
                 ],
                 "extensions": [
@@ -126,7 +134,7 @@
             {
                 "id": "awl",
                 "aliases": [
-                    "TIA Portal: Statement List",
+                    "TIA Portal: AWL/STL",
                     "awl",
                     "stl"
                 ],
@@ -139,7 +147,7 @@
             {
                 "id": "db",
                 "aliases": [
-                    "TIA Portal: Data Block",
+                    "TIA Portal: DB",
                     "db"
                 ],
                 "extensions": [
@@ -149,12 +157,23 @@
             {
                 "id": "udt",
                 "aliases": [
-                    "TIA Portal: User-Defined Type",
+                    "TIA Portal: UDT",
                     "udt"
                 ],
                 "extensions": [
                     ".udt"
                 ]
+            },
+            {
+                "id": "s7dcl",
+                "aliases": [
+                    "TIA Portal: S7DCL",
+                    "s7dcl"
+                ],
+                "extensions": [
+                    ".s7dcl"
+                ],
+                "configuration": "./language-configuration.json"
             }
         ],
         "grammars": [
@@ -177,6 +196,11 @@
                 "language": "udt",
                 "scopeName": "source.tia.udt",
                 "path": "./syntaxes/udt.tmLanguage.json"
+            },
+            {
+                "language": "s7dcl",
+                "scopeName": "source.tia.s7dcl",
+                "path": "./syntaxes/s7dcl.tmLanguage.json"
             }
         ]
     }

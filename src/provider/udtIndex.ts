@@ -1,7 +1,9 @@
 import * as vscode from 'vscode';
 import type { RawMember } from '../parser/declParser';
 import type { UdtResolver } from '../parser/memberBuilder';
+import { parseS7dclUdt, s7dclBlockKeyword } from '../parser/s7dclParser';
 import { parseUdt, type UdtDefinition } from '../parser/udtParser';
+import { readS7res } from './s7resFile';
 
 const MAX_FILES = 5000;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -11,7 +13,10 @@ const DEBOUNCE_MS = 250;
 
 type UdtMap = Map<string, RawMember[]>;
 
-/** Workspace index of `*.udt` sources, loaded lazily and rebuilt when a `.udt` file changes. */
+/** `.udt` and `.s7dcl` sources (and the `.s7res` texts of the latter) that can define a type. */
+const TYPE_FILES = '**/*.{udt,s7dcl,s7res}';
+
+/** Workspace index of `*.udt` and `*.s7dcl` type sources, loaded lazily and rebuilt when one of them changes. */
 export class UdtIndex implements vscode.Disposable {
   private loading: Promise<UdtMap> | undefined;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -21,7 +26,7 @@ export class UdtIndex implements vscode.Disposable {
   readonly onDidChange = this.changed.event;
 
   constructor() {
-    const watcher = vscode.workspace.createFileSystemWatcher('**/*.udt');
+    const watcher = vscode.workspace.createFileSystemWatcher(TYPE_FILES);
     const invalidate = (): void => {
       clearTimeout(this.timer);
       this.timer = setTimeout(() => {
@@ -56,7 +61,19 @@ export class UdtIndex implements vscode.Disposable {
   private async readDefinition(uri: vscode.Uri): Promise<UdtDefinition | undefined> {
     try {
       const bytes = await vscode.workspace.fs.readFile(uri);
-      return bytes.byteLength > MAX_FILE_BYTES ? undefined : parseUdt(new TextDecoder('utf-8').decode(bytes));
+      if (bytes.byteLength > MAX_FILE_BYTES) {
+        return undefined;
+      }
+      const text = new TextDecoder('utf-8').decode(bytes);
+      if (!uri.path.toLowerCase().endsWith('.s7dcl')) {
+        return parseUdt(text);
+      }
+      // data blocks and code blocks share the extension: only types define one
+      if (s7dclBlockKeyword(text) !== 'TYPE') {
+        return undefined;
+      }
+      const culture = vscode.workspace.getConfiguration('tiaViewer').get<string>('culture', '');
+      return parseS7dclUdt(text, await readS7res(uri, culture));
     } catch {
       // an unreadable or malformed UDT only means that type stays unresolved
       return undefined;
@@ -64,7 +81,7 @@ export class UdtIndex implements vscode.Disposable {
   }
 
   private async build(): Promise<UdtMap> {
-    const uris = await vscode.workspace.findFiles('**/*.udt', '**/node_modules/**', MAX_FILES);
+    const uris = await vscode.workspace.findFiles('**/*.{udt,s7dcl}', '**/node_modules/**', MAX_FILES);
     // sorted so that a name defined twice resolves the same way every time (first path wins)
     uris.sort((a, b) => a.fsPath.localeCompare(b.fsPath));
     const map: UdtMap = new Map();

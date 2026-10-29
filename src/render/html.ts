@@ -1,5 +1,5 @@
 import type { DiffMark } from '../model/diff';
-import type { BlockModel, InterfaceMember, InterfaceSection, NetworkModel } from '../model/types';
+import type { BlockModel, InterfaceMember, InterfaceSection, NetworkModel, TextsInfo } from '../model/types';
 import { renderCode } from './code';
 import { escapeHtml, sceneToSvg } from './svg';
 
@@ -198,6 +198,53 @@ function titleBlock(model: BlockModel): string {
   return `<section class="block-title"><h2><span class="label">Block title:</span> ${title}</h2>${comment}</section>`;
 }
 
+const COLLAPSE_ICON = 'M4 3.5 8 7l4-3.5M4 12.5 8 9l4 3.5';
+const EXPAND_ICON = 'M4 6.5 8 3l4 3.5M4 9.5 8 13l4-3.5';
+
+/**
+ * The header button that folds or unfolds all networks. It carries both icons (two chevrons pointing inwards to
+ * collapse, outwards to expand); the script switches `data-action`, which decides the visible one, and the label.
+ */
+function networkToggle(): string {
+  const icon = (cls: string, path: string): string =>
+    `<svg class="${cls}" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">` +
+    `<path d="${path}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return (
+    `<button type="button" class="net-toggle" data-networks-toggle data-action="collapse" ` +
+    `title="Collapse all networks" aria-label="Collapse all networks">` +
+    `${icon('icon-collapse', COLLAPSE_ICON)}${icon('icon-expand', EXPAND_ICON)}</button>`
+  );
+}
+
+const MAX_TEXT_ROWS = 2000;
+
+/** The texts of the `.s7res` as a collapsed table; unused texts and missing ids are flagged. */
+function textsBlock(info: TextsInfo | undefined): string {
+  if (!info) {
+    return '';
+  }
+  const unused = info.entries.filter((e) => !e.used).length;
+  const summary = [
+    `Texts (.s7res): ${info.entries.length}`,
+    ...(unused > 0 ? [`${unused} unused`] : []),
+    ...(info.missing.length > 0 ? [`${info.missing.length} missing`] : []),
+  ].join(', ');
+  const row = (cls: string, id: string, text: string, flag: string): string =>
+    `<tr class="${cls}"><td class="id">${escapeHtml(id)}</td><td class="text">${escapeHtml(text)}</td><td class="flag">${flag}</td></tr>`;
+  const shown = info.entries.slice(0, MAX_TEXT_ROWS);
+  const rows = [
+    ...info.missing.map((id) => row('missing', id, '', 'missing')),
+    ...shown.map((e) => row(e.used ? '' : 'unused', e.id, e.text, e.used ? '' : 'unused')),
+  ];
+  const more =
+    info.entries.length > shown.length ? `<p class="notice">${info.entries.length - shown.length} more texts are not shown.</p>` : '';
+  return (
+    `<details class="texts"><summary>${escapeHtml(summary)}</summary>` +
+    `<div class="scroll"><table class="texts"><thead><tr><th>Id</th><th>Text</th><th></th></tr></thead>` +
+    `<tbody>${rows.join('')}</tbody></table></div>${more}</details>`
+  );
+}
+
 /** Renders the whole viewer page (interface table, block title, networks) as an HTML document. */
 export function renderBlockHtml(model: BlockModel, assets: HtmlAssets): string {
   const csp =
@@ -206,6 +253,7 @@ export function renderBlockHtml(model: BlockModel, assets: HtmlAssets): string {
     model.networks.some((n) => n.body.kind === 'lad')
       ? '<label class="zoom">Zoom <input id="zoom" type="range" min="50" max="200" step="10" value="100"><output id="zoom-out">100%</output></label>'
       : '';
+  const networkActions = model.networks.length > 1 ? networkToggle() : '';
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${csp}">
@@ -214,11 +262,12 @@ export function renderBlockHtml(model: BlockModel, assets: HtmlAssets): string {
 <title>${escapeHtml(model.name)}</title></head>
 <body>
 <header class="block-head"><h1>${escapeHtml(model.name)} <span class="kind">[${escapeHtml(model.kind)}${escapeHtml(model.number)}]</span></h1>
-<div class="props">${headerProps(model)}${zoom}</div></header>
+<div class="props">${headerProps(model)}${zoom}</div>${networkActions}</header>
 ${interfaceBlock(model)}
 ${titleBlock(model)}
 ${model.code ? renderCode(model.code) : ''}
 ${model.networks.map(networkSection).join('\n')}
+${textsBlock(model.texts)}
 <script nonce="${assets.nonce}" src="${assets.scriptUri}"></script>
 </body></html>`;
 }

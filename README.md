@@ -6,13 +6,13 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 
 ## Features
 
-- **Syntax highlighting** for `SCL`, `AWL` / `STL`, `DB` and `UDT` sources.
+- **Syntax highlighting** for `SCL`, `AWL` / `STL`, `DB`, `UDT` and `S7DCL` sources.
 - **`UDT` lookup** from the workspace; views refresh when a file changes.
 - **`LAD` networks** drawn as ladder diagrams, with zoom.
 - **`SCL` / `STL` code** with line numbers, folding and a `REGION` outline.
-- **TIA Viewer**: read-only, TIA-style view of Openness XML and `.db`, `.udt`, `.scl`, `.awl`, `.stl` files.
+- **TIA Viewer**: read-only, TIA-style view of Openness XML and `.db`, `.udt`, `.s7dcl` (with its `.s7res`), `.scl`, `.awl`, `.stl` files.
 - **Interface table** with expandable structs, arrays and UDT members.
-- **Collapsible networks** and a culture setting for titles and comments.
+- **Collapsible networks** (click a network heading, or use *Collapse all* / *Expand all* in the header) and a culture setting for titles and comments.
 - **git diff**: both versions side by side, red/green marks, synchronized scrolling.
 
 ## Languages
@@ -23,6 +23,7 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 | [AWL / STL](#awl--stl--statement-list)   | `.awl`, `.stl` | `source.tia.awl` |
 | [DB](#db--data-block)                    | `.db`          | `source.tia.db`  |
 | [UDT](#udt--user-defined-type)           | `.udt`         | `source.tia.udt` |
+| S7 Declaration                           | `.s7dcl`       | `source.tia.s7dcl` |
 
 All grammars share the same scope suffix (`.tia`), so one theme rule such as `keyword.control.tia` applies to every language.
 
@@ -74,7 +75,7 @@ PLC data types (`TYPE "Name"` … `END_TYPE`).
 
 ## TIA Viewer
 
-A read-only viewer for TIA Portal exports: Openness XML (`*.xml`) and the text sources `*.db`, `*.udt`, `*.scl`, `*.awl` and `*.stl`. Open a file with *Reopen Editor With… > TIA Viewer*, or run *TIA: Open Viewer to the Side*. Changes can be compared in the viewer too, see [git diff](#git-diff). The setting `tiaViewer.culture` (for example `de-DE`) selects the language of titles and comments.
+A read-only viewer for TIA Portal exports: Openness XML (`*.xml`) and the text sources `*.db`, `*.udt`, `*.s7dcl`, `*.scl`, `*.awl` and `*.stl`. Open a file with *Reopen Editor With… > TIA Viewer*, or run *TIA: Open Viewer to the Side*. Changes can be compared in the viewer too, see [git diff](#git-diff). The setting `tiaViewer.culture` (for example `de-DE`) selects the language of titles and comments.
 
 ### Openness XML (`*.xml`)
 
@@ -93,6 +94,17 @@ The same view opens TIA data block sources (*Reopen Editor With… > TIA Viewer*
 
 *Reopen Editor With… > TIA Viewer* on a `.udt` file shows the table of TIA's type editor: name, data type, default value (type defaults greyed), accessible/writable/visible/setpoint flags, supervision and comment, without sections and without a retain column. Structs, arrays and referenced UDTs can be expanded; referenced types are looked up in the `*.udt` files of the workspace, and the view refreshes when one of them changes.
 
+### S7 declaration sources (`*.s7dcl` + `*.s7res`)
+
+TIA Portal V20 and later exports types and blocks as `Name.s7dcl` with the texts in a sibling `Name.s7res` (same folder, same name). Open the `.s7dcl` with *Reopen Editor With… > TIA Viewer*:
+
+- `TYPE` is shown like a `.udt`, `DATA_BLOCK` like a `.db` (also instance data blocks, data blocks on a UDT and array data blocks). Comments, block title and block comment are read from the `.s7res` (the text of the `S7_MLC`, `S7_BlockTitle` and `S7_BlockComment` ids; `tiaViewer.culture` picks the language, `de-DE` is the fallback). Without a `.s7res`, or for an id it does not contain, the id itself is shown.
+- `S7_Access` / `S7_Visibility` become the accessible/writable/visible flags, `S7_Setpoint` the setpoint flag, `S7_Optimized`, `S7_StandardRetain` and `VAR RETAIN` the memory layout and retain columns. Start values after `END_VAR` are applied.
+- Below the block, a collapsed **Texts (.s7res)** table lists every id of the `.s7res` with its text. Texts that nothing refers to are greyed, ids the source uses that the `.s7res` does not contain are marked red.
+- Opening the `.s7res` itself with the TIA Viewer shows the `.s7dcl` it belongs to, so the pair works from either file.
+- Types are looked up in the `*.udt` and `*.s7dcl` files of the workspace. The view refreshes when the `.s7dcl` or its `.s7res` changes.
+- `FUNCTION_BLOCK`, `FUNCTION` and `ORGANIZATION_BLOCK` show the interface table (like an `.scl` source) above their code. `S7_EditorMode := "SCL"` marks a pure SCL block, shown with line numbers, highlighting and the `REGION` outline. A block with `S7_PreferredLanguage := "LAD"` is shown network by network, each following its own `S7_Language`: SCL networks as highlighted code, LAD networks as their source text (`RUNG` / `wire#…`, not drawn as a ladder diagram yet), titles and comments from the `.s7res`.
+
 ### SCL sources (`*.scl`)
 
 *Reopen Editor With… > TIA Viewer* on an `.scl` file shows the interface table (Input, Output, InOut, Static, Temp, Constant, Return; default values greyed, retain, comments, UDT members expandable) above the code. The code pane has line numbers, syntax highlighting from this extension's SCL grammar, fold markers for `IF`, `CASE`, `FOR`, `WHILE`, `REPEAT`, `REGION` and multi-line comments, and a `REGION` outline on the left that scrolls to (and unfolds) the selected region. If the highlighter cannot be loaded the code is shown as plain text.
@@ -103,7 +115,7 @@ The same view opens STL block sources: the interface table above one block per `
 
 ## git diff
 
-Open a change of an exported file (`*.db`, `*.udt`, `*.scl`, `*.awl`, `*.stl`, `*.xml`) from Source Control or the Timeline: both versions are shown in the TIA Viewer side by side, differences are marked red (old version) and green (new version), and both sides scroll together.
+Open a change of an exported file (`*.db`, `*.udt`, `*.s7dcl`, `*.scl`, `*.awl`, `*.stl`, `*.xml`) from Source Control or the Timeline: both versions are shown in the TIA Viewer side by side, differences are marked red (old version) and green (new version), and both sides scroll together.
 
 **Required**
 

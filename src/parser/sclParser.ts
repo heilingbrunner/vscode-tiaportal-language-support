@@ -5,7 +5,7 @@ import { parseMembers, type RawMember } from './declParser';
 import { buildMember, createContext, ROOT_FLAGS, type UdtResolver } from './memberBuilder';
 import { analyzeStructure, scanLine } from './sclStructure';
 
-const BLOCK_KINDS: Record<string, BlockKind> = {
+export const BLOCK_KINDS: Record<string, BlockKind> = {
   FUNCTION_BLOCK: 'FB',
   FUNCTION: 'FC',
   ORGANIZATION_BLOCK: 'OB',
@@ -29,7 +29,7 @@ const RETAIN_SECTIONS = new Set(['Input', 'Output', 'InOut', 'Static']);
 const END_KEYWORD = /^\s*END_(?:FUNCTION_BLOCK|FUNCTION|ORGANIZATION_BLOCK)\b/;
 const MAX_CODE_LINES = 100_000;
 
-interface SectionGroup {
+export interface SectionGroup {
   name: string;
   members: RawMember[];
   retain: boolean;
@@ -42,7 +42,7 @@ interface Header {
 
 const stripComment = (text: string): string => text.replace(/\/\/.*$/, '').trim();
 
-function readSection(cur: Cursor, word: string): SectionGroup {
+export function readSection(cur: Cursor, word: string): SectionGroup {
   cur.word();
   let name = SECTION_NAMES[word] as string;
   let retain = false;
@@ -95,7 +95,7 @@ function extractCode(remainder: string): string[] {
   return lines;
 }
 
-function buildSections(kind: BlockKind, groups: SectionGroup[], returnType: string, resolve: UdtResolver): InterfaceSection[] {
+export function buildSections(kind: BlockKind, groups: SectionGroup[], returnType: string, resolve: UdtResolver): InterfaceSection[] {
   const returns: RawMember[] =
     returnType !== '' && returnType.toLowerCase() !== 'void'
       ? [{ name: 'Ret_Val', pragmas: {}, type: { kind: 'simple', text: returnType }, init: '', comment: '' }]
