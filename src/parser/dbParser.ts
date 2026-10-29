@@ -36,9 +36,14 @@ function buildSection(section: VarSection, ctx: BuildContext): InterfaceMember[]
 }
 
 /** Reads `Path.To[3].Member := value;` statements up to `END_DATA_BLOCK`. */
-function parseAssignments(cur: Cursor): Map<string, string> {
+export function parseAssignments(cur: Cursor): Map<string, string> {
   const assignments = new Map<string, string>();
   while (cur.peek() !== '' && !cur.eatWord('END_DATA_BLOCK')) {
+    if (cur.peek() === '{') {
+      // `.s7dcl` attribute block (`{ S7_MLC := "..." }`) in front of an assignment
+      cur.pragma();
+      continue;
+    }
     let path = '';
     for (;;) {
       path += cur.name();

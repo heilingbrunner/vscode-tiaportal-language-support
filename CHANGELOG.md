@@ -1,5 +1,23 @@
 # Change Log
 
+## [Unreleased]
+
+- **S7 declaration sources in the TIA Viewer**: `*.s7dcl` files (TIA Portal V20+) open in the viewer, with
+  the texts of the sibling `*.s7res`. `TYPE` is shown like a `.udt`, `DATA_BLOCK` like a `.db`: comments,
+  block title and comment from the `.s7res`, access/visibility/setpoint attributes as flags, retain and
+  optimized access from the header, start values after `END_VAR`, instance and array data blocks. UDT
+  lookup also covers `*.s7dcl` types. The view refreshes when the `.s7res` changes. Function blocks,
+  functions and organization blocks show their interface table and code: `S7_EditorMode := "SCL"` blocks
+  like an `.scl` source, `S7_PreferredLanguage := "LAD"` blocks network by network (SCL networks
+  highlighted, LAD networks as source text).
+- **Collapse all / Expand all** buttons in the TIA Viewer header for blocks with more than one network.
+- **`*.s7res` in the TIA Viewer**: a collapsed "Texts (.s7res)" table in the `.s7dcl` view lists all texts
+  (unused texts greyed, missing ids marked), and opening an `.s7res` with the viewer shows the `.s7dcl`
+  it belongs to.
+- **Syntax highlighting for `*.s7dcl`** (scope `source.tia.s7dcl`): `{ S7_... := "..." }` attribute blocks,
+  `NETWORK` / `RUNG` structure with `wire#` names and ladder instructions, the `_.` global scope and
+  `DB_SPECIFIC`; everything else is shared with the SCL grammar.
+
 ## [0.0.6]
 
 - **Git diff in the TIA Viewer**: when a changed export is opened from Source Control or the Timeline and

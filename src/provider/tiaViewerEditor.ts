@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import * as vscode from 'vscode';
 import { parseBlock } from '../parser/blockParser';
 import { parseDataBlock } from '../parser/dbParser';
+import { parseS7dclModel } from '../parser/s7dclParser';
 import { parseAwl, parseScl } from '../parser/sclParser';
 import { parseUdtModel } from '../parser/udtParser';
 import { diffModels } from '../diff/modelDiff';
@@ -10,15 +11,24 @@ import { renderBlockHtml, renderMessageHtml, type HtmlAssets } from '../render/h
 import { withHighlighting } from '../render/sclHighlighter';
 import { gitSourceFile, type ComparePairs } from './comparePairs';
 import type { HighlighterService } from './highlighterService';
+import { readS7res, s7dclUriOf, s7resUriOf } from './s7resFile';
 import type { UdtIndex } from './udtIndex';
 
 export const VIEW_TYPE = 'tia.viewer';
 
 const hasExtension = (uri: vscode.Uri, extension: string): boolean => uri.path.toLowerCase().endsWith(extension);
 const isStlFile = (uri: vscode.Uri): boolean => hasExtension(uri, '.awl') || hasExtension(uri, '.stl');
-/** Text sources (`.db`, `.udt`, `.scl`, `.awl`, `.stl`) resolve UDT members from the workspace; XML exports do not. */
+const isS7dclFile = (uri: vscode.Uri): boolean => hasExtension(uri, '.s7dcl');
+/** An `.s7res` is shown as the `.s7dcl` it belongs to. */
+const isS7resFile = (uri: vscode.Uri): boolean => hasExtension(uri, '.s7res');
+/** Text sources (`.db`, `.udt`, `.s7dcl`, `.scl`, `.awl`, `.stl`) resolve UDT members from the workspace; XML exports do not. */
 const usesUdts = (uri: vscode.Uri): boolean =>
-  hasExtension(uri, '.db') || hasExtension(uri, '.udt') || hasExtension(uri, '.scl') || isStlFile(uri);
+  hasExtension(uri, '.db') ||
+  hasExtension(uri, '.udt') ||
+  isS7dclFile(uri) ||
+  isS7resFile(uri) ||
+  hasExtension(uri, '.scl') ||
+  isStlFile(uri);
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
 class BlockDocument implements vscode.CustomDocument {
@@ -82,6 +92,13 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
     // while it is still rendering cannot leak the watcher or write to a disposed webview
     const rerender = (): void => void render();
     const subscriptions: vscode.Disposable[] = watchFile(document.uri, rerender);
+    if (isS7dclFile(document.uri)) {
+      // the texts of an `.s7dcl` (comments, titles) live in its `.s7res`
+      subscriptions.push(...watchFile(s7resUriOf(document.uri), rerender));
+    } else if (isS7resFile(document.uri)) {
+      // an `.s7res` is shown through the `.s7dcl` it belongs to
+      subscriptions.push(...watchFile(s7dclUriOf(document.uri), rerender));
+    }
     // the compared counterpart is watched too: this viewer's marks depend on its content
     let peerWatch: { key: string; disposables: vscode.Disposable[] } | undefined;
     const syncPeerWatch = (): void => {
@@ -191,7 +208,8 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
     return renderBlockHtml(peer.side === 'old' ? diffed.oldModel : diffed.newModel, assets);
   }
 
-  private async readModel(uri: vscode.Uri): Promise<ModelResult> {
+  private async readModel(opened: vscode.Uri): Promise<ModelResult> {
+    const uri = isS7resFile(opened) ? s7dclUriOf(opened) : opened;
     try {
       const bytes = await vscode.workspace.fs.readFile(uri);
       if (bytes.byteLength > MAX_FILE_BYTES) {
@@ -208,11 +226,13 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
         ? 'TIA data block source'
         : hasExtension(uri, '.udt')
           ? 'TIA UDT source'
-          : hasExtension(uri, '.scl')
-            ? 'TIA SCL source'
-            : isStlFile(uri)
-              ? 'TIA STL source'
-              : 'TIA Openness XML';
+          : isS7dclFile(uri)
+            ? 'TIA S7 declaration source'
+            : hasExtension(uri, '.scl')
+              ? 'TIA SCL source'
+              : isStlFile(uri)
+                ? 'TIA STL source'
+                : 'TIA Openness XML';
       return { message: `The file could not be read as ${what}: ${errorMessage(error)}` };
     }
   }
@@ -223,6 +243,11 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
     }
     if (hasExtension(uri, '.udt')) {
       return parseUdtModel(text, await this.udts.resolver());
+    }
+    if (isS7dclFile(uri)) {
+      const culture = vscode.workspace.getConfiguration('tiaViewer').get<string>('culture', '');
+      const model = parseS7dclModel(text, await readS7res(uri, culture), await this.udts.resolver());
+      return this.highlight(model);
     }
     if (hasExtension(uri, '.scl')) {
       const model = parseScl(text, await this.udts.resolver());

@@ -10,7 +10,8 @@ export class DbParseError extends Error {
 
 const WORD = /[A-Za-z_][A-Za-z0-9_]*/y;
 // the lookbehind keeps the scan linear: a long run of word characters is tried from its start only
-const PRAGMA_ENTRY = /(?<![A-Za-z0-9_])([A-Za-z0-9_]+)\s*:=\s*'([^']*)'/g;
+// classic sources quote the value with `'`, `.s7dcl` attribute blocks with `"`
+const PRAGMA_ENTRY = /(?<![A-Za-z0-9_])([A-Za-z0-9_]+)\s*:=\s*(?:'([^']*)'|"([^"]*)")/g;
 
 /**
  * Character cursor over TIA source text (DB / UDT).
@@ -151,7 +152,7 @@ export class Cursor {
     return this.peek() === '"' ? this.quoted() : this.word();
   }
 
-  /** Parses an optional `{ key := 'value'; ... }` block into lower-cased keys. */
+  /** Parses an optional `{ key := 'value'; ... }` (or `{ S7_Key := "value" }`) block into lower-cased keys. */
   pragma(): Record<string, string> {
     const result: Record<string, string> = Object.create(null) as Record<string, string>;
     this.skipWs();
@@ -165,7 +166,7 @@ export class Cursor {
     const inner = this.src.slice(this.pos + 1, end);
     this.pos = end + 1;
     for (const match of inner.matchAll(PRAGMA_ENTRY)) {
-      result[(match[1] ?? '').toLowerCase()] = match[2] ?? '';
+      result[(match[1] ?? '').toLowerCase()] = match[2] ?? match[3] ?? '';
     }
     return result;
   }

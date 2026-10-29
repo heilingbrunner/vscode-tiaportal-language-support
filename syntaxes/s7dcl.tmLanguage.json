@@ -1,0 +1,89 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "TIA.s7dcl",
+  "scopeName": "source.tia.s7dcl",
+  "fileTypes": ["s7dcl"],
+  "patterns": [
+    { "include": "#attributes" },
+    { "include": "#structure" },
+    { "include": "#rung" },
+    { "include": "#wires" },
+    { "include": "#global-scope" },
+    { "include": "#hex-literals" },
+    { "include": "#assignment-target" },
+    { "include": "source.tia.scl" },
+    { "include": "#bare-type" }
+  ],
+  "repository": {
+    "attributes": {
+      "name": "meta.attributes.tia",
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [
+        { "match": "\\bS7_[A-Za-z0-9_]+", "name": "entity.other.attribute-name.tia" },
+        {
+          "name": "string.quoted.double.tia",
+          "begin": "\"",
+          "end": "\"|(?=$)",
+          "patterns": [
+            { "match": "\\bMLC_[A-Za-z0-9]+", "name": "constant.other.text-id.tia" },
+            { "match": ":=", "name": "keyword.operator.assignment.tia" },
+            { "match": "\\b(?:ReadOnly|Hidden|Unlisted|External)\\b", "name": "constant.language.attribute-value.tia" }
+          ]
+        },
+        { "match": ":=", "name": "keyword.operator.assignment.tia" },
+        { "match": ";", "name": "punctuation.terminator.statement.tia" }
+      ]
+    },
+    "structure": {
+      "patterns": [
+        {
+          "match": "(?i)^\\s*(NETWORK|END_NETWORK|END_TYPE|END_DATA_BLOCK)\\b",
+          "captures": { "1": { "name": "keyword.other.block.tia" } }
+        },
+        {
+          "match": "(?i)^\\s*(TYPE)\\s*$",
+          "captures": { "1": { "name": "keyword.other.block.tia" } }
+        },
+        { "match": "(?i)\\bDB_SPECIFIC\\b", "name": "storage.modifier.tia" }
+      ]
+    },
+    "rung": {
+      "begin": "(?i)^\\s*(RUNG)\\b",
+      "beginCaptures": { "1": { "name": "keyword.control.rung.tia" } },
+      "end": "(?i)^\\s*(END_RUNG)\\b",
+      "endCaptures": { "1": { "name": "keyword.control.rung.tia" } },
+      "patterns": [
+        { "include": "#wires" },
+        { "include": "#global-scope" },
+        { "include": "#hex-literals" },
+        {
+          "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)(?=\\s*\\()",
+          "captures": { "1": { "name": "entity.name.function.ladder.tia" } }
+        },
+        { "match": "(?<![\\w#\".])[A-Za-z_][A-Za-z0-9_]*(?=\\s*(?::=|=>))", "name": "variable.parameter.tia" },
+        { "include": "source.tia.scl" }
+      ]
+    },
+    "wires": {
+      "match": "\\bwire#[A-Za-z_][A-Za-z0-9_]*",
+      "name": "constant.other.wire.tia"
+    },
+    "global-scope": {
+      "match": "(?<![\\w#\"])(?<![^.]\\.)_\\.(?=[A-Za-z_\"])",
+      "name": "keyword.other.global-scope.tia"
+    },
+    "hex-literals": {
+      "match": "(?i)(?<![\\w#\".])(?:B|W|DW|LW)#16#[0-9A-F_]+",
+      "name": "constant.numeric.hex.tia"
+    },
+    "assignment-target": {
+      "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)(?=[.\\[][^;]*:=)",
+      "captures": { "1": { "name": "variable.other.member.tia" } }
+    },
+    "bare-type": {
+      "match": "(?<=:\\s)[A-Za-z_][A-Za-z0-9_]*(?=\\s*(?:;|:=|$))",
+      "name": "entity.name.type.tia"
+    }
+  }
+}
