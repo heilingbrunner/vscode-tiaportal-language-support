@@ -36,6 +36,8 @@ export interface FlgNet {
   accesses: Map<string, string>;
   parts: Map<string, FlgPart>;
   wires: FlgWire[];
+  /** Jump labels declared before the rungs (SD format only). */
+  labels?: string[];
 }
 
 function parseConn(node: XNode): Conn | undefined {

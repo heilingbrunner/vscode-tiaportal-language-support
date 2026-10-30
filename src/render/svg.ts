@@ -2,6 +2,7 @@ import { textWidth } from '../layout/nodes';
 import type { LadScene, SceneItem } from '../layout/scene';
 
 const HALF_SYMBOL = 10;
+const LABEL_H = 20;
 const SYMBOL_HEIGHT = 11;
 
 export function escapeHtml(text: string): string {
@@ -73,9 +74,11 @@ function renderContact(item: Extract<SceneItem, { t: 'contact' }>): string {
 }
 
 function renderCoil(item: Extract<SceneItem, { t: 'coil' }>): string {
-  const { cx, y } = item;
-  const left = `M${num(cx - 4)},${num(y - SYMBOL_HEIGHT)} Q${num(cx - 13)},${num(y)} ${num(cx - 4)},${num(y + SYMBOL_HEIGHT)}`;
-  const right = `M${num(cx + 4)},${num(y - SYMBOL_HEIGHT)} Q${num(cx + 13)},${num(y)} ${num(cx + 4)},${num(y + SYMBOL_HEIGHT)}`;
+  const { cx, y, half } = item;
+  const inner = half - 6;
+  const outer = half + 3;
+  const left = `M${num(cx - inner)},${num(y - SYMBOL_HEIGHT)} Q${num(cx - outer)},${num(y)} ${num(cx - inner)},${num(y + SYMBOL_HEIGHT)}`;
+  const right = `M${num(cx + inner)},${num(y - SYMBOL_HEIGHT)} Q${num(cx + outer)},${num(y)} ${num(cx + inner)},${num(y + SYMBOL_HEIGHT)}`;
   const mark = item.mark
     ? `<text class="mark" x="${num(cx)}" y="${num(y + 4)}" text-anchor="middle">${escapeHtml(item.mark)}</text>`
     : '';
@@ -84,11 +87,18 @@ function renderCoil(item: Extract<SceneItem, { t: 'coil' }>): string {
 
 /** Renders a LAD scene as an inline SVG string (all text is escaped). */
 export function sceneToSvg(scene: LadScene): string {
+  const labels = scene.labels ?? [];
+  const top = labels.length * LABEL_H;
   const w = Math.ceil(scene.width);
-  const h = Math.ceil(scene.height);
+  const h = Math.ceil(scene.height) + top;
+  const labelText = labels
+    .map((l, i) => `<text class="label" x="6" y="${num(i * LABEL_H + 13)}">${escapeHtml(l)}</text>`)
+    .join('');
+  const body = scene.items.map(renderItem).join('');
   return (
     `<svg class="lad" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" data-w="${w}" data-h="${h}">` +
-    scene.items.map(renderItem).join('') +
+    labelText +
+    (top ? `<g transform="translate(0,${top})">${body}</g>` : body) +
     '</svg>'
   );
 }

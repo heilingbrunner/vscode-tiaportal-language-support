@@ -1,7 +1,7 @@
 import type { Conn, FlgNet, FlgParam, FlgPart, FlgWire } from './flgNetParser';
 
 /**
- * LAD in SIMATIC SD format (`RUNG wire#powerrail ... END_RUNG`) turned into the same `FlgNet` model that the
+ * LAD in SIMATIC SD format (`RUNG wire#powerrail ... END_RUNG`, or a bare `RUNG`) turned into the same `FlgNet` model that the
  * Openness XML parser produces, so the existing layout and SVG renderer draw it.
  *
  * - elements of a rung are in series; boxes chain ENO -> EN
@@ -30,6 +30,8 @@ type Item = ElementItem | { kind: 'wire'; name: string };
 
 interface Rung {
   start: string;
+  /** A rung that starts at an operand (FBD input) instead of a wire. */
+  startOperand?: string;
   end: string | undefined;
   items: Item[];
 }
@@ -61,6 +63,12 @@ const ELEMENTS: Record<string, ElementDef> = {
   COIL: symbol('Coil'),
   S_COIL: symbol('SCoil'),
   R_COIL: symbol('RCoil'),
+  RETURNCOIL: symbol('RetCoil'),
+  RETURN_COIL: symbol('RetCoil'),
+  JUMPCOIL: symbol('JCoil'),
+  JUMP_COIL: symbol('JCoil'),
+  I_JUMPCOIL: symbol('JCoil', { negated: 'operand' }),
+  I_JUMP_COIL: symbol('JCoil', { negated: 'operand' }),
   P_TRIG: edge('PBox'),
   N_TRIG: edge('NBox'),
   NOT: { name: 'Not', flowIn: 'in', flowOut: 'out' },
@@ -131,6 +139,18 @@ class Scanner {
     }
     this.pos += m[0].length;
     return m[1];
+  }
+
+  /** An operand (`#tag`, `"tag"`) at the current position that is not the callee of a call. */
+  eatOperand(): string | undefined {
+    this.skipTrivia();
+    const rest = this.text.slice(this.pos);
+    const m = /^(?:#[\w.]+(?:\[[^\]]*\])?|"[^"]*"(?:\.[\w.]+)?)/.exec(rest);
+    if (!m || /^\s*\(/.test(rest.slice(m[0].length))) {
+      return undefined;
+    }
+    this.pos += m[0].length;
+    return m[0];
   }
 
   /** `{ ... }` attribute block; returns its inner text. */
@@ -267,17 +287,23 @@ function parseTemplates(attributes: string): Record<string, string> {
   return templates;
 }
 
-function readRungs(text: string): Rung[] {
+function readRungs(text: string): { rungs: Rung[]; labels: string[] } {
   const scan = new Scanner(text);
   const rungs: Rung[] = [];
+  const labels: string[] = [];
   while (!scan.done) {
+    if (scan.eatWord('LABEL')) {
+      scan.callee();
+      labels.push(scan.args()[0]?.value ?? '');
+      continue;
+    }
     if (rungs.length >= MAX_RUNGS || !scan.eatWord('RUNG')) {
       throw new Error('expected RUNG');
     }
-    const start = scan.eatWire();
-    if (!start) {
-      throw new Error('RUNG without wire#');
-    }
+    // a bare `RUNG` starts at the power rail
+    const wire = scan.eatWire();
+    const startOperand = wire === undefined ? scan.eatOperand() : undefined;
+    const start = wire ?? POWER_RAIL;
     const items: Item[] = [];
     let templates: Record<string, string> = {};
     while (!scan.eatWord('END_RUNG')) {
@@ -296,9 +322,9 @@ function readRungs(text: string): Rung[] {
         templates = {};
       }
     }
-    rungs.push({ start, end: scan.eatWire(), items });
+    rungs.push({ start, startOperand, end: scan.eatWire(), items });
   }
-  return rungs;
+  return { rungs, labels };
 }
 
 function connKey(c: Conn): string {
@@ -337,7 +363,10 @@ class Builder {
   private readonly endersOf = new Map<string, number[]>();
   private uid = 0;
 
-  constructor(private readonly rungs: Rung[]) {
+  constructor(
+    private readonly rungs: Rung[],
+    private readonly labels: string[] = [],
+  ) {
     this.outputs = rungs.map(() => undefined);
     rungs.forEach((rung, i) => {
       for (const item of rung.items) {
@@ -356,7 +385,7 @@ class Builder {
 
   build(): FlgNet {
     this.rungs.forEach((_, i) => this.emitRung(i));
-    return { accesses: this.accesses, parts: this.parts, wires: [...this.wires.values()] };
+    return { accesses: this.accesses, parts: this.parts, wires: [...this.wires.values()], labels: this.labels };
   }
 
   private newUid(): string {
@@ -435,6 +464,11 @@ class Builder {
     this.emitting.add(index);
     const rung = this.rungs[index] as Rung;
     let cur = this.nodeSignal(rung.start);
+    if (rung.startOperand !== undefined) {
+      // an FBD input operand is a contact in ladder terms
+      const args: Arg[] = [{ name: '', dir: '', value: rung.startOperand }];
+      cur = this.element(cur, { kind: 'element', callee: 'Contact', args, templates: {} });
+    }
     for (const item of rung.items) {
       if (item.kind === 'wire') {
         const others = (this.endersOf.get(item.name) ?? []).filter((e) => e !== index).map((e) => this.rungOutput(e));
@@ -522,5 +556,6 @@ class Builder {
 
 /** Parses the rungs of one SD-format LAD network. Throws when the text is not understood. */
 export function parseSdLad(lines: string[]): FlgNet {
-  return new Builder(readRungs(lines.join('\n'))).build();
+  const { rungs, labels } = readRungs(lines.join('\n'));
+  return new Builder(rungs, labels).build();
 }

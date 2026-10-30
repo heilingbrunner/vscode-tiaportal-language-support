@@ -167,7 +167,7 @@ export function withHighlighting(model: BlockModel, highlighters: HighlighterSet
       return network;
     }
     const highlighter =
-      body.language === 'STL' ? highlighters.awl : body.language === 'LAD' ? highlighters.s7dcl : highlighters.scl;
+      body.language === 'STL' ? highlighters.awl : (body.language === 'LAD' || body.language === 'FBD') ? highlighters.s7dcl : highlighters.scl;
     return highlighter ? { ...network, body: { ...body, tokens: highlighter.tokenize(body.lines) } } : network;
   });
   return { ...model, code, networks };

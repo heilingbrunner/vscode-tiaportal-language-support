@@ -673,12 +673,14 @@ class LadLayout {
     const { node } = entry;
     const cx = (col.left + col.right) / 2;
     const y = entry.top + node.headH + SYM_LINE;
-    this.wire([col.left, y], [cx - SYMBOL_HALF, y]);
-    this.wire([cx + SYMBOL_HALF, y], [col.right, y]);
+    // a coil with a long mark (RET, JMPN) is drawn wider so the text sits between its parentheses
+    const half = node.kind === 'coil' ? Math.max(SYMBOL_HALF, node.mark.length * 3.5 + 5) : SYMBOL_HALF;
+    this.wire([col.left, y], [cx - half, y]);
+    this.wire([cx + half, y], [col.right, y]);
     if (node.kind === 'contact') {
       this.out.push({ t: 'contact', cx, y, negated: node.negated, edge: node.edge });
     } else {
-      this.out.push({ t: 'coil', cx, y, mark: node.mark });
+      this.out.push({ t: 'coil', cx, y, mark: node.mark, half });
       if (this.hasNoFlowDst(entry.uid, 'out')) {
         this.out.push({ t: 'line', pts: [[col.right, y - TICK], [col.right, y + TICK]], cls: 'tick' });
       }
@@ -803,9 +805,13 @@ export function layoutLad(net: FlgNet): LadScene {
       width: 48,
       height: 30,
       items: [{ t: 'line', pts: [[RAIL_X, 0], [RAIL_X, 30]], cls: 'rail' }],
+      ...(net.labels?.length ? { labels: net.labels } : {}),
     };
   }
   const scene = new LadLayout(net).run();
+  if (net.labels?.length) {
+    scene.labels = net.labels;
+  }
   if (!Number.isFinite(scene.width) || !Number.isFinite(scene.height)) {
     throw new Error('LAD layout produced invalid geometry');
   }

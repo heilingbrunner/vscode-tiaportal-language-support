@@ -79,7 +79,7 @@ const BOX_DEFS: Record<string, BoxDef> = {
   NBox: edge('N'),
 };
 
-const COIL_MARKS: Record<string, string> = { Coil: '', SCoil: 'S', RCoil: 'R' };
+const COIL_MARKS: Record<string, string> = { Coil: '', SCoil: 'S', RCoil: 'R', RetCoil: 'RET', JCoil: 'JMP' };
 const CONTACT_EDGES: Record<string, '' | 'P' | 'N'> = { Contact: '', PContact: 'P', NContact: 'N' };
 const OPERAND_PINS = new Set(['operand', 'bit']);
 const HIDDEN_LABELS = new Set(['pre']);
@@ -116,6 +116,13 @@ function pinLabel(name: string): string {
 
 const plainPin = (name: string, row = 0): PinDesc => ({ name, label: '', row, negated: false, access: '' });
 
+function coilMark(name: string, negated: boolean): string {
+  if (!negated) {
+    return COIL_MARKS[name] ?? '';
+  }
+  return name === 'JCoil' ? 'JMPN' : '/';
+}
+
 function symbolNode(part: FlgPart, kind: 'contact' | 'coil', pins: PinMap): LNode {
   const operand = pins.get('operand')?.accessIn ?? '';
   const negated = part.negated.has('operand');
@@ -130,7 +137,7 @@ function symbolNode(part: FlgPart, kind: 'contact' | 'coil', pins: PinMap): LNod
     headH: extraH,
     title: '',
     sub: '',
-    mark: kind === 'coil' ? (negated ? '/' : (COIL_MARKS[part.name] ?? '')) : '',
+    mark: kind === 'coil' ? coilMark(part.name, negated) : '',
     negated,
     edge: kind === 'contact' ? (CONTACT_EDGES[part.name] ?? '') : '',
     hasHiddenParams: false,

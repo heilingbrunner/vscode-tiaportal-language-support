@@ -502,6 +502,10 @@ svg.lad text.hint {
   fill: var(--tia-muted);
 }
 
+svg.lad text.label {
+  font-weight: 600;
+}
+
 svg.lad text.mark {
   font-size: 11px;
   font-weight: 600;

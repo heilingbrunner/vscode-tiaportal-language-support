@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { layoutLad } from '../../src/layout/ladLayout';
+import { sceneToSvg } from '../../src/render/svg';
 import type { LadScene, SceneItem } from '../../src/layout/scene';
 import { parseS7dclModel } from '../../src/parser/s7dclParser';
 import { parseSdLad } from '../../src/parser/sdLadParser';
@@ -13,6 +14,38 @@ const ofType = <T extends SceneItem['t']>(scene: LadScene, t: T): Array<Extract<
 const texts = (scene: LadScene): string[] => ofType(scene, 'text').map((i) => i.s);
 
 describe('parseSdLad', () => {
+  it('reads a jump label and an empty-argument call', () => {
+    const net = parseSdLad(['Label(GENERALSAFETY)', 'RUNG', '  "FB_GeneralSafety"()', 'END_RUNG']);
+    expect(net.labels).toEqual(['GENERALSAFETY']);
+    expect([...net.parts.values()].map((p) => p.name)).toEqual(['FB_GeneralSafety']);
+    expect(sceneToSvg(layoutLad(net))).toContain('>GENERALSAFETY</text>');
+  });
+
+  it('starts a rung at an operand and draws a negated jump coil', () => {
+    const net = parseSdLad(['RUNG #SafetyOverruled', '  I_JumpCoil( GENERALSAFETY )', 'END_RUNG']);
+    expect([...net.parts.values()].map((p) => p.name)).toEqual(['Contact', 'JCoil']);
+    expect([...net.accesses.values()].sort()).toEqual(['#SafetyOverruled', 'GENERALSAFETY']);
+    expect(ofType(layoutLad(net), 'coil').map((c) => c.mark)).toEqual(['JMPN']);
+  });
+
+  it('starts a bare RUNG at the power rail and ignores attribute blocks after an element', () => {
+    const net = parseSdLad([
+      'RUNG',
+      '  P_Contact( operand := "Req", bit := #FP )',
+      '  { f_user_card := "1"; f_image_card := "0" }',
+      '  #TOF_A.TOF( pt := t#120m, et => "Remain" )',
+      'END_RUNG',
+    ]);
+    expect([...net.parts.values()].map((p) => p.name)).toEqual(['PContact', 'TOF']);
+    expect(() => layoutLad(net)).not.toThrow();
+  });
+
+  it('draws a return coil as a RET coil', () => {
+    const net = parseSdLad(['RUNG wire#powerrail', '  Contact( "IOCheckActive" )', '  ReturnCoil( TRUE )', 'END_RUNG']);
+    expect([...net.parts.values()].map((p) => p.name)).toEqual(['Contact', 'RetCoil']);
+    expect(ofType(layoutLad(net), 'coil').map((c) => c.mark)).toEqual(['RET']);
+  });
+
   it('chains contacts and a coil in series', () => {
     const net = parseSdLad(['RUNG wire#powerrail', '  Contact( #a )', '  I_Contact( #b )', '  Coil( #c )', 'END_RUNG']);
     expect([...net.parts.values()].map((p) => p.name)).toEqual(['Contact', 'Contact', 'Coil']);

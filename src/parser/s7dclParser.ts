@@ -273,12 +273,13 @@ function readNetworks(text: string): RawNetwork[] {
 
 function networkModel(raw: RawNetwork, index: number, headerLanguage: string, texts: TextTable | undefined): NetworkModel {
   const language = (raw.attributes.s7_language ?? headerLanguage).toUpperCase();
-  const isEmpty = raw.lines.length === 0 || (language === 'LAD' && raw.lines.join(' ').replace(/\s+/g, ' ').trim() === EMPTY_LAD_NETWORK);
+  const isRung = language === 'LAD' || language === 'FBD';
+  const isEmpty = raw.lines.length === 0 || (isRung && raw.lines.join(' ').replace(/\s+/g, ' ').trim() === EMPTY_LAD_NETWORK);
   let body: NetworkModel['body'] = { kind: 'code', language, lines: raw.lines };
   if (isEmpty) {
     body = { kind: 'empty' };
-  } else if (language === 'LAD') {
-    // drawn as a ladder diagram; what the parser does not understand stays source text (highlighted by the grammar)
+  } else if (isRung) {
+    // drawn as a ladder diagram (FBD uses the same rung syntax); what the parser does not understand stays source text (highlighted by the grammar)
     try {
       body = { kind: 'lad', scene: layoutLad(parseSdLad(raw.lines)) };
     } catch {
