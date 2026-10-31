@@ -4,11 +4,13 @@ import { parseBlock } from '../parser/blockParser';
 import { parseDataBlock } from '../parser/dbParser';
 import { parseS7dclModel } from '../parser/s7dclParser';
 import { parseAwl, parseScl } from '../parser/sclParser';
+import { isTagTableSource, parseTagTable, type TagTable } from '../parser/tagTableParser';
 import { parseUdtModel } from '../parser/udtParser';
 import { diffModels } from '../diff/modelDiff';
 import type { BlockModel } from '../model/types';
 import { renderBlockHtml, renderMessageHtml, type HtmlAssets } from '../render/html';
 import { withHighlighting } from '../render/sclHighlighter';
+import { renderTagTableHtml } from '../render/tagTableHtml';
 import { gitSourceFile, type ComparePairs } from './comparePairs';
 import type { HighlighterService } from './highlighterService';
 import { readS7res, s7dclUriOf, s7resUriOf } from './s7resFile';
@@ -56,7 +58,8 @@ function watchFile(uri: vscode.Uri, onChange: () => void): vscode.Disposable[] {
   return [watcher, watcher.onDidChange(onChange), watcher.onDidCreate(onChange)];
 }
 
-type ModelResult = { model: BlockModel } | { message: string };
+/** What a file turned out to be: a block, data block or type, a PLC tag table, or something the viewer cannot show. */
+type ModelResult = { model: BlockModel } | { tagTable: TagTable } | { message: string };
 
 /** Read-only custom editor that shows a TIA Openness block export as a TIA-style view. */
 export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvider<BlockDocument> {
@@ -195,13 +198,17 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
     if ('message' in result) {
       return renderMessageHtml(result.message, assets);
     }
+    if ('tagTable' in result) {
+      // a tag table has no version comparison yet: both sides of a compare just show their table
+      return renderTagTableHtml(result.tagTable, assets);
+    }
     const peer = this.pairs.get(uri);
     if (!peer) {
       return renderBlockHtml(result.model, assets);
     }
     // an unreadable counterpart only costs the marks: this file is still shown
     const other = await this.readModel(peer.other);
-    if ('message' in other) {
+    if (!('model' in other)) {
       return renderBlockHtml(result.model, assets);
     }
     const diffed = peer.side === 'old' ? diffModels(result.model, other.model) : diffModels(other.model, result.model);
@@ -216,9 +223,16 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
         return { message: 'This file is too large for the TIA viewer (limit: 50 MB).' };
       }
       const text = new TextDecoder('utf-8').decode(bytes);
+      if (hasExtension(uri, '.xml') && isTagTableSource(text)) {
+        const culture = vscode.workspace.getConfiguration('tiaViewer').get<string>('culture', '');
+        const tagTable = parseTagTable(text, culture);
+        if (tagTable) {
+          return { tagTable };
+        }
+      }
       const model = await this.parse(uri, text);
       if (!model) {
-        return { message: 'This file is not a TIA Portal block export (FB, FC or OB).' };
+        return { message: 'This file is not a TIA Portal export the viewer can show (block, data block, type or PLC tag table).' };
       }
       return { model };
     } catch (error: unknown) {

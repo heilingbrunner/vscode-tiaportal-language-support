@@ -151,6 +151,51 @@ table.interface td.start.default {
   display: none;
 }
 
+/* the Tags / User constants tabs of a tag table, at the right edge of the header */
+.tabs {
+  display: flex;
+  gap: 2px;
+  align-self: stretch;
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+.tab {
+  padding: 3px 14px;
+  color: var(--tia-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--vscode-editor-foreground);
+}
+
+.tab[aria-selected='true'] {
+  color: var(--vscode-editor-foreground);
+  background: var(--vscode-editor-background);
+  border-color: var(--vscode-panel-border);
+  border-bottom-color: var(--tia-accent);
+}
+
+.tab:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+table.tagtable td.address,
+table.tagtable td.value {
+  white-space: nowrap;
+}
+
+/* a flag that cannot be changed for this tag: shown, but dimmed */
+table.tagtable input.dim {
+  opacity: 0.4;
+}
+
 details.texts {
   margin: 16px 12px 0;
 }

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- **PLC tag tables in the TIA Viewer**: the Openness XML of a tag table (the *PLC tags* folder) opens like TIA
+  Portal's tag table editor, with a Tags tab (name, data type, address, retain, accessible / writable / visible,
+  comment) and a User constants tab (name, data type, value, comment). A table that only has constants opens on
+  them. Tag tables are not compared in the git diff view yet.
 - **Search in project**: a new view that searches the exported sources of a folder like TIA Portal's "Search in
   project". Right-click a folder in the Explorer and choose "TIA: Search in Folder…" (or run "TIA: Search in
   Project…"). It finds names, authors, titles and comments, interface members, program code, the operands of

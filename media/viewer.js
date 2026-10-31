@@ -25,7 +25,8 @@
   // number the visible rows of the interface table, as TIA does
   function renumberRows() {
     var n = 0;
-    document.querySelectorAll('table.interface tbody tr').forEach(function (row) {
+    // tables marked data-static (tag tables) carry their own, fixed numbers
+    document.querySelectorAll('table.interface:not([data-static]) tbody tr').forEach(function (row) {
       var cell = row.querySelector('td.rownum');
       if (cell) {
         cell.textContent = row.classList.contains('hidden') ? '' : String(++n);
@@ -63,9 +64,24 @@
     }
   }
 
+  // the Tags / User constants tabs of a tag table: one panel is shown at a time
+  function selectTab(id) {
+    document.querySelectorAll('button[data-tab]').forEach(function (button) {
+      button.setAttribute('aria-selected', String(button.dataset.tab === id));
+    });
+    document.querySelectorAll('[data-panel]').forEach(function (panel) {
+      panel.hidden = panel.dataset.panel !== id;
+    });
+  }
+
   document.addEventListener('click', function (event) {
     var target = event.target;
     if (!(target instanceof Element)) {
+      return;
+    }
+    var tab = target.closest('button[data-tab]');
+    if (tab) {
+      selectTab(tab.dataset.tab);
       return;
     }
     var fold = target.closest('.fold[data-from]');

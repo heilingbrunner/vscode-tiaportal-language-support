@@ -30,8 +30,26 @@ describe('parseTagTable', () => {
     expect(table).toEqual({
       name: 'Conveyor I/O',
       tags: [
-        { name: 'Ib_CarrierPresent', dataType: 'Bool', address: '%I1300.3', comment: 'Carrier present' },
-        { name: 'Qr_Speed', dataType: 'Real', address: '%QD40', comment: '' },
+        {
+          name: 'Ib_CarrierPresent',
+          dataType: 'Bool',
+          address: '%I1300.3',
+          comment: 'Carrier present',
+          retain: false,
+          accessible: false,
+          writable: true,
+          visible: true,
+        },
+        {
+          name: 'Qr_Speed',
+          dataType: 'Real',
+          address: '%QD40',
+          comment: '',
+          retain: false,
+          accessible: true,
+          writable: true,
+          visible: true,
+        },
       ],
       constants: [{ name: 'MaxCarriers', dataType: 'Int', value: '12', comment: 'Maximum carriers on the line' }],
     });
@@ -40,6 +58,14 @@ describe('parseTagTable', () => {
   it('takes the comment of the asked culture, else the first text there is', () => {
     expect(parseTagTable(source, 'de-DE')?.tags[0].comment).toBe('Carrier vorhanden');
     expect(parseTagTable(source, '')?.tags[0].comment).toBe('Carrier vorhanden');
+  });
+
+  it('reads the flags of a tag, which are on unless the export says otherwise', () => {
+    const changed = source.replace(
+      '<Name>Qr_Speed</Name>',
+      '<ExternalWritable>false</ExternalWritable><ExternalVisible>false</ExternalVisible><Retain>true</Retain><Name>Qr_Speed</Name>',
+    );
+    expect(parseTagTable(changed, '')?.tags[1]).toMatchObject({ retain: true, accessible: true, writable: false, visible: false });
   });
 
   it('is undefined for an XML that is not a tag table', () => {

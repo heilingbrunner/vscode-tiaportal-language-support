@@ -245,10 +245,13 @@ function textsBlock(info: TextsInfo | undefined): string {
   );
 }
 
+/** The content security policy of a viewer page: only its own style sheet and the script that carries the nonce. */
+export const pageCsp = (assets: HtmlAssets): string =>
+  `default-src 'none'; style-src ${assets.cspSource}; script-src 'nonce-${assets.nonce}'; img-src ${assets.cspSource} data:;`;
+
 /** Renders the whole viewer page (interface table, block title, networks) as an HTML document. */
 export function renderBlockHtml(model: BlockModel, assets: HtmlAssets): string {
-  const csp =
-    `default-src 'none'; style-src ${assets.cspSource}; script-src 'nonce-${assets.nonce}'; img-src ${assets.cspSource} data:;`;
+  const csp = pageCsp(assets);
   const zoom =
     model.networks.some((n) => n.body.kind === 'lad')
       ? '<label class="zoom">Zoom <input id="zoom" type="range" min="50" max="200" step="10" value="100"><output id="zoom-out">100%</output></label>'

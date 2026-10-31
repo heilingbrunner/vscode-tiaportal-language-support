@@ -11,6 +11,7 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 - **`LAD` networks** drawn as ladder diagrams, with zoom.
 - **`SCL` / `STL` code** with line numbers, folding and a `REGION` outline.
 - **TIA Viewer**: read-only, TIA-style view of Openness XML and `.db`, `.udt`, `.s7dcl` (with its `.s7res`), `.scl`, `.awl`, `.stl` files.
+- **PLC tag tables** in the layout of TIA's tag table editor, with Tags and User constants tabs.
 - **Interface table** with expandable structs, arrays and UDT members.
 - **Collapsible networks** (click a network heading, or use the collapse/expand all button in the header, which also folds the interface sections) and a culture setting for titles and comments.
 - **git diff**: both versions side by side, red/green marks, synchronized scrolling.
@@ -96,6 +97,10 @@ Blocks exported as Openness XML (FB, FC, OB). The viewer shows the interface tab
 - **SCL** and **STL** networks are shown as source text.
 
 Callee block numbers (`%FB1`, `%DB43`) are not part of the export and are not shown.
+
+### PLC tag tables (`*.xml`)
+
+A tag table exported as Openness XML (the files of the *PLC tags* folder) opens like the tag table editor of TIA Portal, with a **Tags** tab (name, data type, address, retain, accessible / writable / visible, comment) and a **User constants** tab (name, data type, value, comment). The comments follow the culture setting. A table that only holds constants, such as an enumeration, opens on the constants. The writable and visible flags are dimmed for a tag that is not accessible from HMI / OPC UA, as in TIA. Tag tables are not compared in the [git diff](#git-diff) view yet; both sides just show their table.
 
 ### Data blocks (`*.db`)
 

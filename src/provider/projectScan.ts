@@ -5,7 +5,7 @@ import { parseDataBlock } from '../parser/dbParser';
 import { parseS7dclModel } from '../parser/s7dclParser';
 import type { TextTable } from '../parser/s7res';
 import { parseAwl, parseScl } from '../parser/sclParser';
-import { parseTagTable } from '../parser/tagTableParser';
+import { isTagTableSource, parseTagTable } from '../parser/tagTableParser';
 import { parseUdtModel } from '../parser/udtParser';
 import type { ObjectHits, SearchHit, SearchKind } from '../search/hits';
 import { compileMatcher, type Matcher } from '../search/matcher';
@@ -134,11 +134,9 @@ function parseSource(uri: vscode.Uri, text: string, culture: string, texts: Text
   return parseBlock(text, culture);
 }
 
-const TAG_TABLE_MARKER = '<SW.Tags.PlcTagTable';
-
 /** Searches one source: a PLC tag table export, or a block, data block or type. XML is parsed once, by what it holds. */
 function searchSource(uri: vscode.Uri, text: string, scan: FileScan, texts: TextTable | undefined): ObjectHits | undefined {
-  if (hasExtension(uri.path, '.xml') && text.includes(TAG_TABLE_MARKER)) {
+  if (hasExtension(uri.path, '.xml') && isTagTableSource(text)) {
     const table = parseTagTable(text, scan.culture);
     return table && searchTagTable(table, scan.matcher, MAX_HITS_PER_OBJECT);
   }
