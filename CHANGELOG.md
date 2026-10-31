@@ -4,8 +4,8 @@
 
 - **Search in project**: a new view that searches the exported sources of a folder like TIA Portal's "Search in
   project". Right-click a folder in the Explorer and choose "TIA: Search in Folder…" (or run "TIA: Search in
-  Project…"). It finds names, authors, titles and comments, interface members, program code and the operands of
-  LAD networks, with "Find exact match" (whole words), a "Limit search to" tree that narrows the result without
+  Project…"). It finds names, authors, titles and comments, interface members, program code, the operands of
+  LAD networks and the tags and constants of PLC tag tables, with "Find exact match" (whole words), a "Limit search to" tree that narrows the result without
   searching again, results that appear while the search runs, and a Path column such as
   `\Network 3\Program code\Line 12`. Double-click opens the TIA Viewer, Ctrl+double-click the source text.
 - **LAD diagrams laid out like TIA Portal**: contact and coil operands are never struck through by a wire any

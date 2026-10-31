@@ -24,8 +24,25 @@
         { label: 'Program code', key: 'field:code' },
       ],
     },
+    {
+      label: 'PLC tags',
+      children: [
+        { label: 'Tags', key: 'field:tag' },
+        { label: 'Constants', key: 'field:constant' },
+      ],
+    },
     { label: 'PLC data types', children: [{ label: 'PLC data types', key: 'kind:UDT' }] },
   ];
+
+  // The kinds that have an entry of their own in the tree. A tag table has none: its areas are Tags and Constants.
+  var kindLeaves = {};
+  LIMITS.forEach(function (group) {
+    group.children.forEach(function (child) {
+      if (child.key.indexOf('kind:') === 0) {
+        kindLeaves[child.key] = true;
+      }
+    });
+  });
 
   /** Results with fewer matches than this are shown expanded. */
   var AUTO_EXPAND_MATCHES = 60;
@@ -85,7 +102,8 @@
    * of object takes in everything in it (its name, interface, code ...), a property takes in that part of every object.
    */
   function visibleHits(obj) {
-    if (isEnabled('kind:' + obj.kind)) {
+    var kindKey = 'kind:' + obj.kind;
+    if (kindLeaves[kindKey] && isEnabled(kindKey)) {
       return obj.hits;
     }
     return obj.hits.filter(function (hit) {

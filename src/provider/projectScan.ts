@@ -1,21 +1,24 @@
 import * as vscode from 'vscode';
-import type { BlockKind, BlockModel } from '../model/types';
+import type { BlockModel } from '../model/types';
 import { parseBlock } from '../parser/blockParser';
 import { parseDataBlock } from '../parser/dbParser';
 import { parseS7dclModel } from '../parser/s7dclParser';
 import type { TextTable } from '../parser/s7res';
 import { parseAwl, parseScl } from '../parser/sclParser';
+import { parseTagTable } from '../parser/tagTableParser';
 import { parseUdtModel } from '../parser/udtParser';
+import type { ObjectHits, SearchHit, SearchKind } from '../search/hits';
 import { compileMatcher, type Matcher } from '../search/matcher';
-import { searchModel, type SearchHit } from '../search/modelSearch';
+import { searchModel } from '../search/modelSearch';
 import { longestWordRun, mayContain } from '../search/prefilter';
 import { displayPath } from '../search/resultPath';
+import { searchTagTable } from '../search/tagSearch';
 import { readS7res } from './s7resFile';
 
-/** One object (block, data block or type) with its hits, as it is sent to the search view. */
+/** One object (block, data block, type or tag table) with its hits, as it is sent to the search view. */
 export interface FoundObject {
   uri: string;
-  kind: BlockKind;
+  kind: SearchKind;
   name: string;
   path: string;
   /** The first hits of the object. */
@@ -131,6 +134,18 @@ function parseSource(uri: vscode.Uri, text: string, culture: string, texts: Text
   return parseBlock(text, culture);
 }
 
+const TAG_TABLE_MARKER = '<SW.Tags.PlcTagTable';
+
+/** Searches one source: a PLC tag table export, or a block, data block or type. XML is parsed once, by what it holds. */
+function searchSource(uri: vscode.Uri, text: string, scan: FileScan, texts: TextTable | undefined): ObjectHits | undefined {
+  if (hasExtension(uri.path, '.xml') && text.includes(TAG_TABLE_MARKER)) {
+    const table = parseTagTable(text, scan.culture);
+    return table && searchTagTable(table, scan.matcher, MAX_HITS_PER_OBJECT);
+  }
+  const model = parseSource(uri, text, scan.culture, texts);
+  return model && searchModel(model, scan.matcher, MAX_HITS_PER_OBJECT);
+}
+
 async function scanFile(uri: vscode.Uri, scan: FileScan): Promise<FileOutcome> {
   try {
     // the size is checked first: a huge file must not be read into memory just to be turned down
@@ -144,8 +159,7 @@ async function scanFile(uri: vscode.Uri, scan: FileScan): Promise<FileOutcome> {
     if (!mayMatch) {
       return undefined;
     }
-    const model = parseSource(uri, text, scan.culture, texts);
-    const result = model && searchModel(model, scan.matcher, MAX_HITS_PER_OBJECT);
+    const result = searchSource(uri, text, scan, texts);
     if (!result) {
       return undefined;
     }

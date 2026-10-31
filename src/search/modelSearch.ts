@@ -1,60 +1,15 @@
 import { HEAD_LINE } from '../layout/nodes';
 import type { SceneItem } from '../layout/scene';
-import type { BlockKind, BlockModel, InterfaceMember, NetworkModel } from '../model/types';
-import type { Matcher, Range } from './matcher';
+import type { BlockModel, InterfaceMember, NetworkModel } from '../model/types';
+import { createCollector, type AddHit, type ObjectHits } from './hits';
+import type { Matcher } from './matcher';
 
-/** What a hit was found in; these are the properties TIA lets you limit a search to. */
-export type SearchField = 'name' | 'author' | 'comment' | 'interface' | 'code';
-
-export interface SearchHit {
-  field: SearchField;
-  /** Where the hit is, in the style of TIA's result paths: `Interface\Input\Ib_Start\Name`. */
-  path: string;
-  /** The text around the match, trimmed and shortened. */
-  text: string;
-  /** The matched parts of `text`. */
-  marks: Range[];
-}
-
-export interface ObjectHits {
-  kind: BlockKind;
-  name: string;
-  /** The first hits, at most the limit that was asked for. */
-  hits: SearchHit[];
-  /** All hits in the object, also those beyond the limit. */
-  total: number;
-}
+export type { ObjectHits, SearchField, SearchHit } from './hits';
 
 type TextItem = Extract<SceneItem, { t: 'text' }>;
-type AddHit = (field: SearchField, path: string, source: string) => void;
 
-const SNIPPET_MAX = 200;
-const SNIPPET_LEAD = 50;
-const ELLIPSIS = '…';
 /** The rows `[0]`, `[1]`, ... that the models add for the elements of an array. */
 const ELEMENT_ROW = /^\[.*\]$/;
-
-/**
- * Makes a hit text fit one result line: line breaks and tabs become spaces (one for one, so the marks stay where
- * they are), the text is trimmed and a long one is cut down to a window around its first match.
- */
-function snippet(source: string, marks: Range[]): { text: string; marks: Range[] } {
-  const flat = source.replace(/[\r\n\t]/g, ' ');
-  const lead = flat.length - flat.trimStart().length;
-  const text = flat.trim();
-  const shifted = marks.map(([from, to]): Range => [from - lead, to - lead]);
-  if (text.length <= SNIPPET_MAX) {
-    return { text, marks: shifted };
-  }
-  const start = Math.max(0, shifted[0][0] - SNIPPET_LEAD);
-  const end = Math.min(text.length, start + SNIPPET_MAX);
-  const head = start > 0 ? ELLIPSIS : '';
-  const tail = end < text.length ? ELLIPSIS : '';
-  const clipped = shifted
-    .filter(([from]) => from < end)
-    .map(([from, to]): Range => [Math.max(from, start) - start + head.length, Math.min(to, end) - start + head.length]);
-  return { text: head + text.slice(start, end) + tail, marks: clipped };
-}
 
 const memberPath = (parent: string, name: string): string =>
   parent === '' ? name : ELEMENT_ROW.test(name) ? `${parent}${name}` : `${parent}.${name}`;
@@ -140,18 +95,7 @@ function searchNetwork(network: NetworkModel, add: AddHit): void {
  * `maxHits` hits are kept, so one huge block cannot flood the result list; `total` still counts them all.
  */
 export function searchModel(model: BlockModel, matcher: Matcher, maxHits = Infinity): ObjectHits | undefined {
-  const hits: SearchHit[] = [];
-  let total = 0;
-  const add: AddHit = (field, path, source) => {
-    const marks = matcher(source);
-    if (marks.length === 0) {
-      return;
-    }
-    total++;
-    if (hits.length < maxHits) {
-      hits.push({ field, path, ...snippet(source, marks) });
-    }
-  };
+  const { add, result } = createCollector(matcher, maxHits);
   add('name', 'Name', model.name);
   add('author', 'Author', model.dataBlock?.author ?? '');
   add('comment', 'Title', model.title);
@@ -163,5 +107,5 @@ export function searchModel(model: BlockModel, matcher: Matcher, maxHits = Infin
   }
   model.code?.lines.forEach((line, i) => add('code', `Program code\\Line ${i + 1}`, line));
   model.networks.forEach((network) => searchNetwork(network, add));
-  return total > 0 ? { kind: model.kind, name: model.name, hits, total } : undefined;
+  return result(model.kind, model.name);
 }

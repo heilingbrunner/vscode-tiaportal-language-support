@@ -333,6 +333,10 @@ progress {
   background: #0a7d86;
 }
 
+.kind-TAGS {
+  background: #6f42c1;
+}
+
 mark {
   color: inherit;
   background: var(--vscode-editor-findMatchHighlightBackground, rgba(234, 92, 0, 0.33));
