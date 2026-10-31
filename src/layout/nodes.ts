@@ -35,6 +35,9 @@ export interface LNode {
   headLines: string[];
   /** Boxes: height of the label block above the box. Contacts/coils: extra label height above the symbol line. */
   headH: number;
+  /** Boxes only: label lines below the box, and the height they take. */
+  footLines: string[];
+  footH: number;
   title: string;
   sub: string;
   mark: string;
@@ -51,12 +54,24 @@ interface BoxDef {
   title: string;
   left: string[];
   right: string[];
+  /** Pin labels that differ from the upper-cased pin name. */
+  labels?: Record<string, string>;
+  /** The instance and operand lines go below the box instead of above it. */
+  operandBelow?: boolean;
 }
 
 const math = (title: string): BoxDef => ({ title, left: ['en', 'in1', 'in2'], right: ['eno', 'out'] });
 const compare = (title: string): BoxDef => ({ title, left: ['pre', 'in1', 'in2'], right: ['out'] });
 const timer = (title: string): BoxDef => ({ title, left: ['in', 'pt'], right: ['q', 'et'] });
 const edge = (title: string): BoxDef => ({ title, left: ['in'], right: ['out'] });
+/** P_TRIG / N_TRIG: TIA Portal draws CLK and Q, with the memory bit underneath. */
+const trig = (title: string): BoxDef => ({
+  title,
+  left: ['in'],
+  right: ['out'],
+  labels: { in: 'CLK', out: 'Q' },
+  operandBelow: true,
+});
 
 const BOX_DEFS: Record<string, BoxDef> = {
   Move: { title: 'MOVE', left: ['en', 'in'], right: ['eno', 'out1'] },
@@ -75,8 +90,8 @@ const BOX_DEFS: Record<string, BoxDef> = {
   TOF: timer('TOF'),
   TP: timer('TP'),
   Not: edge('NOT'),
-  PBox: edge('P'),
-  NBox: edge('N'),
+  PBox: trig('P_TRIG'),
+  NBox: trig('N_TRIG'),
 };
 
 const COIL_MARKS: Record<string, string> = { Coil: '', SCoil: 'S', RCoil: 'R', RetCoil: 'RET', JCoil: 'JMP' };
@@ -135,6 +150,8 @@ function symbolNode(part: FlgPart, kind: 'contact' | 'coil', pins: PinMap): LNod
     h: SYM_H + extraH,
     headLines: lines,
     headH: extraH,
+    footLines: [],
+    footH: 0,
     title: '',
     sub: '',
     mark: kind === 'coil' ? coilMark(part.name, negated) : '',
@@ -160,6 +177,8 @@ function orNode(part: FlgPart, pins: PinMap): LNode {
     h: 0,
     headLines: [],
     headH: 0,
+    footLines: [],
+    footH: 0,
     title: '',
     sub: '',
     mark: '',
@@ -234,7 +253,10 @@ function boxNode(part: FlgPart, pins: PinMap): LNode {
   const operandTexts = [...pins.values()]
     .filter((p) => OPERAND_PINS.has(p.name) && p.accessIn)
     .map((p) => p.accessIn as string);
-  const headLines = [part.instance, ...operandTexts].filter(Boolean);
+  const labelLines = [part.instance, ...operandTexts].filter(Boolean);
+  const labelsBelow = def?.operandBelow === true;
+  const headLines = labelsBelow ? [] : labelLines;
+  const footLines = labelsBelow ? labelLines : [];
   const title = part.isCall ? `"${part.name}"` : (def?.title ?? part.name);
   const sub = part.isCall ? '' : (TYPE_TEMPLATES.map((k) => part.templates[k]).find(Boolean) ?? '');
   const describe = (list: string[], isLeft: boolean): PinDesc[] =>
@@ -242,7 +264,7 @@ function boxNode(part: FlgPart, pins: PinMap): LNode {
       const state = pins.get(name);
       return {
         name,
-        label: pinLabel(name),
+        label: def?.labels?.[name] ?? pinLabel(name),
         row,
         negated: part.negated.has(name),
         access: isLeft ? (state?.accessIn ?? '') : (state?.accessOut.join(', ') ?? ''),
@@ -252,6 +274,7 @@ function boxNode(part: FlgPart, pins: PinMap): LNode {
   const right = describe(names.right, false);
   const rows = Math.max(left.length, right.length, 1);
   const headH = headLines.length > 0 ? headLines.length * HEAD_LINE + 4 : 0;
+  const footH = footLines.length > 0 ? footLines.length * HEAD_LINE + 4 : 0;
   const labelW = (ps: PinDesc[]): number => Math.max(0, ...ps.map((p) => textWidth(p.label)));
   const padOf = (ps: PinDesc[]): number =>
     Math.max(0, ...ps.filter((p) => p.access).map((p) => textWidth(p.access) + ACCESS_GAP));
@@ -262,11 +285,13 @@ function boxNode(part: FlgPart, pins: PinMap): LNode {
       MIN_BOX_W,
       labelW(left) + labelW(right) + 28,
       textWidth(title) + (sub ? textWidth(sub) + 10 : 0) + 20,
-      ...headLines.map((l) => textWidth(l) + 10),
+      ...labelLines.map((l) => textWidth(l) + 10),
     ),
-    h: headH + TITLE_H + rows * ROW + 4 + (names.hidden ? HIDDEN_PARAMS_H : 0),
+    h: headH + TITLE_H + rows * ROW + 4 + footH + (names.hidden ? HIDDEN_PARAMS_H : 0),
     headLines,
     headH,
+    footLines,
+    footH,
     title,
     sub,
     mark: '',

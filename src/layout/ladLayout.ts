@@ -20,11 +20,24 @@ const MAX_AIMS = 4;
 const MAX_AIM_SHIFT = 250;
 /** Upper bound for the placement passes that grow the fan-out spans (they settle after one or two). */
 const MAX_PASSES = 8;
+/** Upper bound for the extra gap a single box input may need on top of the estimated spacing. */
+const MAX_PIN_GROW = 400;
 
 /** How far above its symbol line a one-line operand label reaches (text top, plus air for a wire above). */
 const LABEL_REACH = 38;
 
-type PinRefLike = { uid: string } | 'rail' | undefined;
+/** Air between the top of a label and the wire above it. */
+const AIR = LABEL_REACH - SYM_LINE;
+
+type PinRefLike = { uid: string; pin: string } | 'rail' | undefined;
+
+/** Vertical room around a wire: how far its feeding elements reach up and down from it. */
+interface Extent {
+  above: number;
+  below: number;
+}
+
+const NO_EXTENT: Extent = { above: 0, below: 0 };
 
 /** A wire that runs straight through the columns between its source and its farthest destination. */
 interface PassThrough {
@@ -66,7 +79,8 @@ function firstWireIndex(net: FlgNet): Map<string, number> {
 class LadLayout {
   private readonly pins: PinTable;
   private readonly entries = new Map<string, Entry>();
-  private readonly occupied = new Map<number, Array<[number, number]>>();
+  /** Per column: reserved vertical ranges with the clearance to keep from each (an OR bar needs little). */
+  private readonly occupied = new Map<number, Array<[number, number, number]>>();
   private readonly out: SceneItem[] = [];
   private columns: Column[] = [];
   private passThroughs: PassThrough[] = [];
@@ -82,6 +96,12 @@ class LadLayout {
   private aimCount = new Map<string, number>();
   /** Per node: the preferred top of the current pass without its aim. */
   private rawPrefs = new Map<string, number>();
+  /** Per node: how far its rung was moved down after placement; aims are measured before that move. */
+  private shifts = new Map<string, number>();
+  /** Per node: its description before the input pins were spaced out. */
+  private rawNodes = new Map<string, LNode>();
+  /** Per box input pin (`uid:pin`): extra gap above it that the placement showed to be needed. */
+  private pinGrow = new Map<string, number>();
   private endX = 0;
 
   constructor(private readonly net: FlgNet) {
@@ -99,41 +119,100 @@ class LadLayout {
       });
     }
     for (const entry of this.entries.values()) {
+      this.rawNodes.set(entry.uid, entry.node);
+    }
+    this.spaceAllBoxes();
+  }
+
+  private spaceAllBoxes(): void {
+    for (const entry of this.entries.values()) {
       this.spaceBoxInputs(entry);
     }
   }
 
-  /**
-   * Height an input pin's wire needs above it: the operand label of the contact/coil that feeds it (seen
-   * through an OR bar, whose output follows its first input) sits on top of the wire.
-   */
-  private feedLabelHeight(src: PinRefLike, seen = new Set<string>()): number {
-    const entry = src === 'rail' || !src ? undefined : this.entries.get(src.uid);
-    if (!entry || seen.has(entry.uid)) {
-      return 0;
-    }
-    seen.add(entry.uid);
-    const { node } = entry;
-    if (node.kind === 'contact' || node.kind === 'coil') {
-      return node.headH + LABEL_REACH;
-    }
-    if (node.kind === 'or') {
-      const first = node.left[0];
-      return first ? this.feedLabelHeight(this.pins.get(entry.uid)?.get(first.name)?.flowSrc, seen) : 0;
-    }
-    return 0;
+  private flowSrc(uid: string, pin: string): PinRefLike {
+    return this.pins.get(uid)?.get(pin)?.flowSrc;
   }
 
-  /** Spreads the input pins of a box only as far apart as the labels of the elements feeding them need. */
-  private spaceBoxInputs(entry: Entry): void {
+  /**
+   * Vertical room the elements feeding a pin take around the wire that reaches it: `above` up to the top of
+   * their labels, `below` down to the bottom of the branches an OR bar stacks under its first input.
+   */
+  private feedExtent(src: PinRefLike, path = new Set<string>()): Extent {
+    const entry = src === 'rail' || !src ? undefined : this.entries.get(src.uid);
+    if (!entry || path.has(entry.uid) || src === 'rail' || !src) {
+      return NO_EXTENT;
+    }
+    path.add(entry.uid);
     const { node } = entry;
+    const extent =
+      node.kind === 'or'
+        ? this.orExtent(entry, path)
+        : node.kind === 'box'
+          ? this.boxExtent(entry, src.pin, path)
+          : this.symbolExtent(entry, path);
+    path.delete(entry.uid);
+    return extent;
+  }
+
+  /** A contact or coil shares its wire with the rest of its series chain, whose labels count as well. */
+  private symbolExtent(entry: Entry, path: Set<string>): Extent {
+    const up = this.feedExtent(this.flowSrc(entry.uid, 'in'), path);
+    const above = entry.node.headH + SYM_LINE;
+    return { above: Math.max(above, up.above), below: Math.max(entry.node.h - above, up.below) };
+  }
+
+  /** The output of an OR bar follows its first input; the other inputs stack below it. */
+  private orExtent(entry: Entry, path: Set<string>): Extent {
+    const [first, ...rest] = entry.node.left.map((p) => this.feedExtent(this.flowSrc(entry.uid, p.name), path));
+    if (!first) {
+      return NO_EXTENT;
+    }
+    const below = rest.reduce((sum, part) => sum + GAP_Y + part.above + part.below, first.below);
+    return { above: first.above, below };
+  }
+
+  /** A box takes its own height around the output pin, plus the chain on its (first wired) input pin. */
+  private boxExtent(entry: Entry, pin: string, path: Set<string>): Extent {
+    const { node } = entry;
+    const output = node.right.find((p) => p.name === pin);
+    if (!output) {
+      return NO_EXTENT;
+    }
+    const offset = node.headH + TITLE_H + output.row * ROW + ROW / 2;
+    const own = { above: offset, below: node.h - offset };
+    const input = node.left.find((p) => this.flowSrc(entry.uid, p.name));
+    if (!input) {
+      return own;
+    }
+    const up = this.feedExtent(this.flowSrc(entry.uid, input.name), path);
+    const shift = (output.row - input.row) * ROW;
+    return { above: Math.max(own.above, up.above + shift), below: Math.max(own.below, up.below - shift) };
+  }
+
+  /**
+   * Spreads the input pins of a box as far apart as the elements feeding them need: the label of a chain
+   * must clear the wires above it, and a pin must start below the branches stacked under the pin before.
+   */
+  private spaceBoxInputs(entry: Entry): void {
+    const node = this.rawNodes.get(entry.uid) ?? entry.node;
     if (node.kind !== 'box') {
       return;
     }
     let y = 0;
+    let lastWired = Number.NEGATIVE_INFINITY;
+    let bottom = Number.NEGATIVE_INFINITY;
     const left = node.left.map((pin, i) => {
-      const need = i === 0 ? 0 : this.feedLabelHeight(this.pins.get(entry.uid)?.get(pin.name)?.flowSrc);
-      y = i === 0 ? 0 : y + Math.max(ROW, need);
+      const extent = this.feedExtent(this.flowSrc(entry.uid, pin.name));
+      const wired = extent.above > 0;
+      if (i > 0) {
+        const clear = wired
+          ? Math.max(lastWired + extent.above + AIR, bottom + GAP_Y + extent.above)
+          : Number.NEGATIVE_INFINITY;
+        y = Math.max(y + ROW, clear) + (this.pinGrow.get(`${entry.uid}:${pin.name}`) ?? 0);
+      }
+      lastWired = wired ? y : lastWired;
+      bottom = Math.max(bottom, y + extent.below);
       return { ...pin, row: y / ROW };
     });
     const oldRows = Math.max(node.left.length, node.right.length, 1);
@@ -305,9 +384,9 @@ class LadLayout {
     return pin ? this.pinOffset(entry.node, pin.name) : 0;
   }
 
-  private reserve(col: number, from: number, to: number): void {
+  private reserve(col: number, from: number, to: number, clearance = GAP_Y): void {
     const slots = this.occupied.get(col) ?? [];
-    slots.push([from, to]);
+    slots.push([from, to, clearance]);
     this.occupied.set(col, slots);
   }
 
@@ -315,7 +394,8 @@ class LadLayout {
     this.placed.add(entry.uid);
     if (entry.node.kind === 'or') {
       entry.top = preferred;
-      this.reserve(entry.depth, preferred - OR_PAD, Math.max(...entry.orYs.values()) + OR_PAD);
+      // a bar is a thin line, and its range already carries OR_PAD, so nothing is added around it
+      this.reserve(entry.depth, preferred - OR_PAD, Math.max(...entry.orYs.values()) + OR_PAD, 0);
       return;
     }
     const height = Math.max(entry.node.h, this.spans.get(entry.uid) ?? 0);
@@ -324,18 +404,21 @@ class LadLayout {
     const pinNames = [...entry.node.left, ...entry.node.right].map((p) => p.name);
     const onOwnPin = (top: number, y: number): boolean =>
       pinNames.some((name) => Math.abs(top + this.pinOffset(entry.node, name) - y) < 0.5);
+    // A row keeps clear of what lies above it by the tallest label further along the row, not only its own.
+    const isSymbol = entry.node.kind === 'contact' || entry.node.kind === 'coil';
+    const lift = isSymbol && this.startsRow(entry) ? Math.max(0, this.rowLabelHeight(entry.uid) - entry.node.headH) : 0;
     let top = preferred;
     for (let moved = true; moved; ) {
       moved = false;
-      for (const [from, to] of slots) {
-        if (top < to + GAP_Y && top + height > from - GAP_Y) {
-          top = to + GAP_Y;
+      for (const [from, to, gap] of slots) {
+        if (top - lift < to + gap && top + height > from - gap) {
+          top = to + gap + lift;
           moved = true;
         }
       }
       for (const y of crossings) {
-        if (y > top - CROSS_MARGIN && y < top + height + CROSS_MARGIN && !onOwnPin(top, y)) {
-          top = y + GAP_Y;
+        if (y > top - lift - CROSS_MARGIN && y < top + height + CROSS_MARGIN && !onOwnPin(top, y)) {
+          top = y + GAP_Y + lift;
           moved = true;
         }
       }
@@ -347,6 +430,7 @@ class LadLayout {
   private resetPlacement(): void {
     this.occupied.clear();
     this.placed.clear();
+    this.shifts.clear();
     for (const entry of this.entries.values()) {
       entry.top = 0;
       entry.orYs.clear();
@@ -377,6 +461,43 @@ class LadLayout {
   }
 
   /**
+   * True when `entry` is one of several parallel branches that all merge again at the OR bar `join` (and
+   * nothing else hangs off the wire that feeds them). The wires of those branches end at the bar, so what
+   * follows the join lies to its right and does not hang below `entry`.
+   */
+  private endsAtJoin(entry: Entry, join: Entry): boolean {
+    if (join.node.kind !== 'or' || join.node.left.length < 2 || entry.node.kind === 'or') {
+      return false;
+    }
+    const input = entry.node.left.find((p) => this.flowSrc(entry.uid, p.name));
+    const src = input ? this.flowSrc(entry.uid, input.name) : undefined;
+    if (!src || src === 'rail') {
+      return false;
+    }
+    const siblings = this.pins.get(src.uid)?.get(src.pin)?.flowDsts ?? [];
+    return siblings.every(
+      (s) =>
+        s.uid === entry.uid || (this.pins.get(s.uid)?.get('out')?.flowDsts ?? []).some((d) => d.uid === join.uid),
+    );
+  }
+
+  /**
+   * How much of a node counts towards the span of the node feeding it. A box fed by several different
+   * sources only counts down to the row of that wire: the other sources line up with their own pins, so
+   * they must not be pushed below the whole box.
+   */
+  private reservedHeight(entry: Entry): number {
+    const feeders = new Set(
+      entry.node.left.map((p) => {
+        const src = this.flowSrc(entry.uid, p.name);
+        return src === 'rail' ? 'rail' : src?.uid;
+      }),
+    );
+    feeders.delete(undefined);
+    return entry.node.kind === 'box' && feeders.size > 1 ? this.alignedOffset(entry) + ROW / 2 : entry.node.h;
+  }
+
+  /**
    * Makes every node reserve the vertical span of everything that hangs off it (its fan-out), so the
    * next node in its column lands below that subtree and no wire has to cross it. OR bars add no span
    * of their own. Returns true when a span grew and the placement has to be redone.
@@ -396,9 +517,11 @@ class LadLayout {
         return known;
       }
       memo.set(entry.uid, Number.NEGATIVE_INFINITY);
-      let result = entry.node.kind === 'or' ? Number.NEGATIVE_INFINITY : entry.top + entry.node.h;
+      let result = entry.node.kind === 'or' ? Number.NEGATIVE_INFINITY : entry.top + this.reservedHeight(entry);
       for (const child of children.get(entry.uid) ?? []) {
-        result = Math.max(result, bottom(child));
+        if (!this.endsAtJoin(entry, child)) {
+          result = Math.max(result, bottom(child));
+        }
       }
       memo.set(entry.uid, result);
       return result;
@@ -417,7 +540,52 @@ class LadLayout {
       grew = this.aimRailRoot(entry) || grew;
       grew = this.alignChain(entry, movedChains) || grew;
     }
+    return this.alignBoxInputs(movedChains) || grew;
+  }
+
+  /**
+   * The pin spacing of a box is estimated before anything is placed, so a chain, an OR group or a coil
+   * can end up on another row than the pin it feeds. When it is lower (it could not reach up that far),
+   * the gap above the pin is widened by the difference; when it is higher, the feeding chain is moved
+   * down to the pin. Either way the placement is redone. Returns true when something moved.
+   */
+  private alignBoxInputs(movedChains: Set<string>): boolean {
+    let grew = false;
+    for (const entry of this.entries.values()) {
+      for (const [i, pin] of entry.node.left.entries()) {
+        const src = entry.node.kind === 'box' && i > 0 ? this.flowSrc(entry.uid, pin.name) : undefined;
+        const feeder = src && src !== 'rail' ? this.entries.get(src.uid) : undefined;
+        if (!src || src === 'rail' || !feeder) {
+          continue;
+        }
+        const lag = this.pinY(feeder, src.pin) - this.pinY(entry, pin.name);
+        const key = `${entry.uid}:${pin.name}`;
+        const grown = this.pinGrow.get(key) ?? 0;
+        const alone = (this.pins.get(feeder.uid)?.get(src.pin)?.flowDsts ?? []).length === 1;
+        const root = lag < -0.5 && alone ? this.feederRoot(feeder) : undefined;
+        if (lag > 0.5 && grown + lag <= MAX_PIN_GROW) {
+          this.pinGrow.set(key, grown + lag);
+          grew = true;
+        } else if (root) {
+          grew = this.moveChainDown(root, -lag, movedChains) || grew;
+        }
+      }
+    }
+    if (grew) {
+      this.spaceAllBoxes();
+    }
     return grew;
+  }
+
+  /** The chain start that decides the row of `feeder`: for an OR bar, the chain of its topmost input. */
+  private feederRoot(feeder: Entry): Entry | undefined {
+    if (feeder.node.kind !== 'or') {
+      return this.beforeJoins(this.chainRoot(feeder));
+    }
+    const [topmost] = [...feeder.orYs].sort((a, b) => a[1] - b[1]);
+    const src = topmost ? this.flowSrc(feeder.uid, topmost[0]) : undefined;
+    const input = src && src !== 'rail' ? this.entries.get(src.uid) : undefined;
+    return input ? this.beforeJoins(this.chainRoot(input), new Set(), feeder) : undefined;
   }
 
   /**
@@ -436,30 +604,151 @@ class LadLayout {
     return dsts.length === 1 || primary ? { parent, ownPin: pin.name, parentPin: src.pin } : undefined;
   }
 
+  /** Start of the straight chain that `entry` belongs to, following wires that can stay straight. */
+  private chainRoot(entry: Entry): Entry {
+    let root = entry;
+    for (let up = this.straightParent(root); up; up = this.straightParent(root)) {
+      root = up.parent;
+    }
+    return root;
+  }
+
+  /**
+   * The chain start to move down, and by how much, so that `entry` lines up with what feeds it: the
+   * single-output node before it, or the OR bar before it. An OR bar outputs at the row of its topmost
+   * input, so it is that input's chain that has to move.
+   */
+  private dragTarget(entry: Entry): { root: Entry; dy: number } | undefined {
+    const link = this.straightParent(entry);
+    if (link) {
+      return {
+        root: this.beforeJoins(this.chainRoot(link.parent)),
+        dy: this.pinY(entry, link.ownPin) - this.pinY(link.parent, link.parentPin),
+      };
+    }
+    const bar = this.joinBefore(entry);
+    const pin = entry.node.left.find((p) => this.flowSrc(entry.uid, p.name));
+    if (bar && pin) {
+      return { root: this.beforeJoins(entry), dy: this.pinY(entry, pin.name) - this.pinY(bar, 'out') };
+    }
+    // The topmost of several consumers of a bar holds the bar's row. Moving the chain behind the bar is only
+    // safe when it starts at the power rail; a start on a fan-out would push its neighbours around.
+    const holder = pin ? this.holderJoin(entry, pin.name) : undefined;
+    const root = holder ? this.feederRoot(holder) : undefined;
+    return holder && pin && root && this.isRailFed(root)
+      ? { root, dy: this.pinY(entry, pin.name) - this.pinY(holder, 'out') }
+      : undefined;
+  }
+
+  /** The OR bar feeding `pinName` of `entry`, if `entry` is the highest of the consumers wired to its output. */
+  private holderJoin(entry: Entry, pinName: string): Entry | undefined {
+    const src = this.flowSrc(entry.uid, pinName);
+    const bar = src && src !== 'rail' ? this.entries.get(src.uid) : undefined;
+    if (bar?.node.kind !== 'or') {
+      return undefined;
+    }
+    const own = this.pinY(entry, pinName);
+    const others = (this.pins.get(bar.uid)?.get('out')?.flowDsts ?? []).filter(
+      (c) => !(c.uid === entry.uid && c.pin === pinName),
+    );
+    const isHigher = (c: { uid: string; pin: string }): boolean => {
+      const consumer = this.entries.get(c.uid);
+      return consumer ? this.pinY(consumer, c.pin) > own : true;
+    };
+    return others.every(isHigher) ? bar : undefined;
+  }
+
+  /**
+   * The OR bar that feeds `entry`, if moving `entry` moves the bar's row: it has no other consumer, or all
+   * its other consumers are parallel branches that meet again at `via`, the bar being climbed through.
+   */
+  private joinBefore(entry: Entry, via?: Entry): Entry | undefined {
+    const pin = entry.node.left.find((p) => this.flowSrc(entry.uid, p.name));
+    const src = pin ? this.flowSrc(entry.uid, pin.name) : undefined;
+    const bar = src && src !== 'rail' ? this.entries.get(src.uid) : undefined;
+    if (bar?.node.kind !== 'or') {
+      return undefined;
+    }
+    const consumers = this.pins.get(bar.uid)?.get('out')?.flowDsts ?? [];
+    const meetAgain = (c: { uid: string }): boolean =>
+      c.uid === entry.uid ||
+      (via !== undefined && (this.pins.get(c.uid)?.get('out')?.flowDsts ?? []).some((d) => d.uid === via.uid));
+    return consumers.length === 1 || consumers.every(meetAgain) ? bar : undefined;
+  }
+
+  /** True for a node that starts its own row: fed from the rail, or a side branch of a fan-out. */
+  private startsRow(entry: Entry): boolean {
+    const pin = entry.node.left.find((p) => this.flowSrc(entry.uid, p.name));
+    const src = pin ? this.flowSrc(entry.uid, pin.name) : undefined;
+    if (!pin || !src) {
+      return false;
+    }
+    if (src === 'rail') {
+      return true;
+    }
+    const parent = this.entries.get(src.uid);
+    const consumers = this.pins.get(src.uid)?.get(src.pin)?.flowDsts ?? [];
+    const isPrimary = consumers[0]?.uid === entry.uid && consumers[0]?.pin === pin.name;
+    return parent?.node.kind !== 'or' && consumers.length > 1 && !isPrimary;
+  }
+
+  /**
+   * Tallest operand label further along the row of `uid`'s output: contacts and coils in series (also
+   * through OR bars) share one wire, so the row has to leave room for the tallest of their labels.
+   */
+  private rowLabelHeight(uid: string, pin = 'out', seen = new Set<string>()): number {
+    const consumers = this.pins.get(uid)?.get(pin)?.flowDsts ?? [];
+    const isOr = this.entries.get(uid)?.node.kind === 'or';
+    // a fan-out only keeps its primary branch on this row; the others start rows of their own
+    return (isOr ? consumers : consumers.slice(0, 1)).reduce((tallest, dst) => {
+      const next = this.entries.get(dst.uid);
+      if (!next || seen.has(next.uid) || next.node.kind === 'box') {
+        return tallest;
+      }
+      seen.add(next.uid);
+      const own = next.node.kind === 'or' ? 0 : next.node.headH;
+      return Math.max(tallest, own, this.rowLabelHeight(next.uid, 'out', seen));
+    }, 0);
+  }
+
+  /**
+   * A chain that starts right behind an OR bar cannot move relative to the bar: the bar outputs at the
+   * row of its topmost input, so it is the chain of that input that has to move.
+   */
+  private beforeJoins(root: Entry, seen = new Set<string>(), via?: Entry): Entry {
+    const bar = this.joinBefore(root, via);
+    if (!bar || seen.has(root.uid)) {
+      return root;
+    }
+    seen.add(root.uid);
+    const [topmost] = [...bar.orYs].sort((a, b) => a[1] - b[1]);
+    const feeder = topmost ? this.flowSrc(bar.uid, topmost[0]) : undefined;
+    const feederEntry = feeder && feeder !== 'rail' ? this.entries.get(feeder.uid) : undefined;
+    return feederEntry ? this.beforeJoins(this.chainRoot(feederEntry), seen, bar) : root;
+  }
+
   /**
    * A contact or coil that ended up lower than the single-output node feeding it (pushed down by a wire
    * or a neighbour) drags the start of that straight chain down by the same amount, so the wire does not
    * get a crease.
    */
   private alignChain(entry: Entry, movedChains: Set<string>): boolean {
-    if (entry.node.kind !== 'contact' && entry.node.kind !== 'coil') {
+    if (entry.node.kind === 'or') {
       return false;
     }
-    const link = this.straightParent(entry);
-    if (!link) {
+    const target = this.dragTarget(entry);
+    if (!target || target.dy <= 0.5) {
       return false;
     }
-    const dy = this.pinY(entry, link.ownPin) - this.pinY(link.parent, link.parentPin);
-    if (dy <= 0.5) {
-      return false;
-    }
-    let top = link.parent;
-    for (let up = this.straightParent(top); up; up = this.straightParent(top)) {
-      top = up.parent;
-    }
+    return this.moveChainDown(target.root, target.dy, movedChains);
+  }
+
+  /** Moves the chain starting at `top` down by `dy` in the next pass; bounded so a conflict cannot snowball. */
+  private moveChainDown(top: Entry, dy: number, movedChains: Set<string>): boolean {
     const times = this.aimCount.get(top.uid) ?? 0;
     // relative to the raw preference, from where the node really sits (a neighbour may hold it lower)
-    const wanted = top.top + dy - (this.rawPrefs.get(top.uid) ?? top.top);
+    const placedTop = top.top - (this.shifts.get(top.uid) ?? 0);
+    const wanted = placedTop + dy - (this.rawPrefs.get(top.uid) ?? placedTop);
     if (movedChains.has(top.uid) || times >= MAX_AIMS || wanted > MAX_AIM_SHIFT) {
       return false;
     }
@@ -467,6 +756,37 @@ class LadLayout {
     this.aimCount.set(top.uid, times + 1);
     this.aims.set(top.uid, wanted);
     return true;
+  }
+
+  /**
+   * The box pins that the wire leaving `pin` of a node ends at. OR bars, contacts, coils and single-row
+   * edge boxes (P/N/NOT) pass the row on, so the search continues through them.
+   */
+  private drivenPins(uid: string, pin: string, seen = new Set<string>()): Array<{ uid: string; pin: string }> {
+    if (seen.has(uid)) {
+      return [];
+    }
+    seen.add(uid);
+    return (this.pins.get(uid)?.get(pin)?.flowDsts ?? []).flatMap((dst) => {
+      const out = this.rowPreservingOutput(dst);
+      const onward = out ? this.drivenPins(dst.uid, out, seen) : [];
+      return onward.length > 0 ? onward : [dst];
+    });
+  }
+
+  /**
+   * The output pin through which the row of the wire arriving at `dst` continues: OR bars, contacts and
+   * coils pass it on, and so does a box with a single output on the same row as that (first wired) input.
+   */
+  private rowPreservingOutput(dst: { uid: string; pin: string }): string | undefined {
+    const node = this.entries.get(dst.uid)?.node;
+    if (node?.kind === 'or' || node?.kind === 'contact' || node?.kind === 'coil') {
+      return 'out';
+    }
+    const [output] = node?.kind === 'box' && node.right.length === 1 ? node.right : [];
+    const firstWired = node?.left.find((p) => this.pins.get(dst.uid)?.get(p.name)?.flowSrc);
+    const arrivesOnFirst = firstWired?.name === dst.pin;
+    return output && arrivesOnFirst && firstWired.row === output.row ? output.name : undefined;
   }
 
   /**
@@ -479,32 +799,20 @@ class LadLayout {
       return false;
     }
     let delta = 0;
-    // an OR bar between the node and the box passes its row on to the box pin
-    const dsts = (this.pins.get(entry.uid)?.get('out')?.flowDsts ?? []).flatMap((dst) =>
-      this.entries.get(dst.uid)?.node.kind === 'or' ? (this.pins.get(dst.uid)?.get('out')?.flowDsts ?? []) : [dst],
-    );
-    for (const dst of dsts) {
+    for (const dst of this.drivenPins(entry.uid, 'out')) {
       const dstEntry = this.entries.get(dst.uid);
       if (dstEntry?.node.kind !== 'box') {
         continue;
       }
+      // the box spaces its pins so that the labels of what feeds them clear the wires above
       const row = this.pinY(dstEntry, dst.pin);
-      // The operand label sits above the symbol line; do not park it on the wire of another input pin.
-      const reach = entry.node.headH + LABEL_REACH;
-      const blocked = dstEntry.node.left.some((p) => {
-        const y = this.pinY(dstEntry, p.name);
-        return (
-          p.name !== dst.pin && y < row && y > row - reach + 0.5 && this.pins.get(dst.uid)?.get(p.name)?.flowSrc
-        );
-      });
-      if (!blocked) {
-        delta = Math.max(delta, row - this.pinOffset(entry.node, 'out') - entry.top);
-      }
+      delta = Math.max(delta, row - this.pinOffset(entry.node, 'out') - entry.top);
     }
     if (delta <= 0.5) {
       return false;
     }
-    this.aims.set(entry.uid, entry.top + delta - (this.rawPrefs.get(entry.uid) ?? entry.top));
+    const placedTop = entry.top - (this.shifts.get(entry.uid) ?? 0);
+    this.aims.set(entry.uid, placedTop + delta - (this.rawPrefs.get(entry.uid) ?? placedTop));
     return true;
   }
 
@@ -556,9 +864,11 @@ class LadLayout {
       // An OR bar cannot move (its inputs fix its span), so it goes first and the other nodes avoid it.
       const isOr = (e: Entry): number => (e.node.kind === 'or' ? 0 : 1);
       // Order by the row a node lines up with (not by its label top), so a tall label cannot take the
-      // straight row away from the node the wire actually continues through.
+      // straight row away from the node the wire actually continues through. The aims are left out: a
+      // node that was moved down keeps its place in the order, and the nodes behind it stack beneath it
+      // instead of it being sent below all of them.
       const row = (e: Entry): number =>
-        this.isRailFed(e) ? this.base : (preferred.get(e) ?? 0) + this.alignedOffset(e);
+        this.isRailFed(e) ? this.base : (this.rawPrefs.get(e.uid) ?? 0) + this.alignedOffset(e);
       group.sort((a, b) => isOr(a) - isOr(b) || row(a) - row(b) || a.order - b.order);
       for (const entry of group) {
         this.place(entry, preferred.get(entry) ?? this.base);
@@ -583,6 +893,7 @@ class LadLayout {
   private shiftRung(rung: Entry[], dy: number): void {
     for (const entry of rung) {
       entry.top += dy;
+      this.shifts.set(entry.uid, dy);
       for (const [name, y] of entry.orYs) {
         entry.orYs.set(name, y + dy);
       }
@@ -693,13 +1004,24 @@ class LadLayout {
   private emitBox(entry: Entry, col: Column): void {
     const { node } = entry;
     const boxTop = entry.top + node.headH;
+    const boxH = node.h - node.headH - node.footH;
     const width = col.right - col.left;
-    this.out.push({ t: 'box', x: col.left, y: boxTop, w: width, h: node.h - node.headH, headH: TITLE_H });
+    this.out.push({ t: 'box', x: col.left, y: boxTop, w: width, h: boxH, headH: TITLE_H });
     node.headLines.forEach((line, i) => {
       this.out.push({
         t: 'text',
         x: col.left + width / 2,
         y: entry.top + (i + 1) * HEAD_LINE,
+        s: line,
+        cls: 'head',
+        anchor: 'middle',
+      });
+    });
+    node.footLines.forEach((line, i) => {
+      this.out.push({
+        t: 'text',
+        x: col.left + width / 2,
+        y: boxTop + boxH + (i + 1) * HEAD_LINE,
         s: line,
         cls: 'head',
         anchor: 'middle',
@@ -719,7 +1041,7 @@ class LadLayout {
       this.out.push({
         t: 'text',
         x: col.left + width / 2,
-        y: entry.top + node.h - 2,
+        y: boxTop + boxH - 2,
         s: '▾',
         cls: 'hint',
         anchor: 'middle',

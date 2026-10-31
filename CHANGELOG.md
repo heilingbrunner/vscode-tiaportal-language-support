@@ -1,5 +1,17 @@
 # Change Log
 
+## [Unreleased]
+
+- **LAD diagrams laid out like TIA Portal**: contact and coil operands are never struck through by a wire any
+  more, and the wires bend only where they have to (the second and later branches of a fan-out). Rows leave
+  room for the tallest label further along them; box inputs are spaced to fit the contact chains and OR groups
+  that feed them, and a chain is moved so that it reaches its pin straight; the parallel branches of a series
+  of ORs share their rows instead of stepping down. Measured over a project of 3649 networks: wires through
+  operand labels 424 → 0, crossings between unconnected wires 1103 → 0, needless bends 1456 → 0, at about
+  1 % more diagram height.
+- **`P_TRIG` / `N_TRIG` drawn like TIA Portal**: titled `P_TRIG` / `N_TRIG` with the pins `CLK` and `Q`, and the
+  memory bit below the box instead of above it.
+
 ## [0.0.8]
 
 - **LAD networks of SD format sources drawn as ladder diagrams**: `RUNG` / `wire#…` networks in `*.s7dcl` are
