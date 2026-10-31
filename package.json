@@ -91,9 +91,23 @@
             {
                 "command": "tia.openViewer",
                 "title": "TIA: Open Viewer to the Side"
+            },
+            {
+                "command": "tia.searchInFolder",
+                "title": "TIA: Search in Folder…"
+            },
+            {
+                "command": "tia.searchInProject",
+                "title": "TIA: Search in Project…"
             }
         ],
         "menus": {
+            "commandPalette": [
+                {
+                    "command": "tia.searchInFolder",
+                    "when": "false"
+                }
+            ],
             "editor/title": [
                 {
                     "command": "tia.openViewer",
@@ -106,6 +120,11 @@
                     "command": "tia.openViewer",
                     "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl || resourceExtname == .s7dcl || resourceExtname == .s7res",
                     "group": "navigation"
+                },
+                {
+                    "command": "tia.searchInFolder",
+                    "when": "explorerResourceIsFolder",
+                    "group": "4_search"
                 }
             ]
         },

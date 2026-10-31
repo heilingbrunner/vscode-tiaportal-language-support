@@ -14,6 +14,7 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 - **Interface table** with expandable structs, arrays and UDT members.
 - **Collapsible networks** (click a network heading, or use the collapse/expand all button in the header, which also folds the interface sections) and a culture setting for titles and comments.
 - **git diff**: both versions side by side, red/green marks, synchronized scrolling.
+- **Search in project**: a TIA-style search over all exported sources of a folder (right-click a folder in the Explorer).
 
 ## Languages
 
@@ -122,6 +123,17 @@ TIA Portal V20 and later exports types and blocks as `Name.s7dcl` with the texts
 ### STL sources (`*.awl`, `*.stl`)
 
 The same view opens STL block sources: the interface table above one block per `NETWORK`, each with its title, the comment lines below the title and a numbered, syntax-highlighted listing of the instructions (English or German mnemonics, labels, absolute addresses, block calls). SCL and STL networks inside Openness XML exports are shown the same way.
+
+## Search in project
+
+Right-click a folder in the Explorer and choose *TIA: Search in Folder…* (or run *TIA: Search in Project…* from the Command Palette to start at the workspace folder). The **Search in project** view opens like TIA Portal's: enter the text, check or change the folder in *Search in*, and press *Start search*.
+
+- **What is searched**: Openness XML, `.db`, `.udt`, `.scl`, `.awl`, `.stl` and `.s7dcl` (with the titles and comments of its `.s7res`) below the folder: block and type names, the author of data blocks, titles and comments, interface members (name, data type, start value), program code line by line, and the operands and called blocks of LAD networks. In PLC tag tables (Openness XML) it searches the name, data type, address and comment of every tag and the name, data type, value and comment of every constant. Types are not expanded, so the members of a UDT are found in the UDT, not in every block that uses it, and start values that are only the type's default are not matched.
+- **Find exact match** only finds whole words: `Motor1` does not find `Motor10`. The search ignores case.
+- **Result**: one row per block, data block or type with its number of matches; expand it to see each match with its location in the *Path* column, for example `\Interface\Input\Ib_Start\Name` or `\Network 3\Program code\Line 12`. Results appear while the search runs, and *Stop* ends it.
+- **Limit search to** (left): as in TIA Portal every entry is a search area, and ticking or unticking changes the result without searching again. A kind of block (OB, FB, FC, DB, PLC data types) takes in everything in it, including its name; a property (name, author, comment, interface, program code) takes in that part of every block, and *Tags* and *Constants* take in those of the PLC tag tables. To see only the PLC data types, leave just *PLC data types* ticked.
+- **Open**: double-click a row (or press Enter) to open the file in the TIA Viewer; hold Ctrl and double-click (Ctrl+Enter) to open its source text at the first match.
+- **Limits**: a block shows its first 500 matches (marked `500+`), the search stops after 5000 blocks, and folders such as `.git` and `node_modules` are skipped.
 
 ## git diff
 

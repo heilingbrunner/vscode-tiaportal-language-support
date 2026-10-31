@@ -3,21 +3,9 @@ import type { BlockKind, BlockModel, NetworkBody, NetworkModel } from '../model/
 import { parseFlgNet } from './flgNetParser';
 import { parseInterface } from './interfaceParser';
 import { renderStatementList, renderStructuredText } from './textNetwork';
-import { attributeOf, child, childrenNamed, parseXml, type XNode } from './xml';
+import { attributeOf, child, childrenNamed, parseXml, pickText, type XNode } from './xml';
 
 const BLOCK_NODE = /^SW\.Blocks\.(FB|FC|OB)$/;
-
-/** Picks the text of a `MultilingualText` for `culture`, else the first non-empty item. */
-function pickText(objectList: XNode | undefined, composition: string, culture: string): string {
-  const text = objectList?.children.find(
-    (c) => c.name === 'MultilingualText' && c.attrs.CompositionName === composition,
-  );
-  const items = childrenNamed(child(text, 'ObjectList'), 'MultilingualTextItem').map((item) => ({
-    culture: attributeOf(item, 'Culture') ?? '',
-    text: attributeOf(item, 'Text') ?? '',
-  }));
-  return (items.find((i) => i.culture === culture && i.text) ?? items.find((i) => i.text))?.text ?? '';
-}
 
 function parseBody(source: XNode | undefined): NetworkBody {
   switch (source?.name) {
