@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased]
+## [0.0.9]
 
 - **PLC tag tables in the TIA Viewer**: the Openness XML of a tag table (the *PLC tags* folder) opens like TIA
   Portal's tag table editor, with a Tags tab (name, data type, address, retain, accessible / writable / visible,
