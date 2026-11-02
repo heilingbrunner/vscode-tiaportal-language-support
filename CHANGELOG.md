@@ -1,5 +1,16 @@
 # Change Log
 
+## [0.0.10]
+
+- **PLC tag tables in the git diff view**: a tag table compared with its previous version now marks the
+  differences red (old) and green (new), like blocks do. A tag or user constant that exists in one version only
+  is marked as a whole row; for a tag or constant in both versions only the cells that changed are marked. Tags
+  are matched by name, so a renamed tag shows as one removed and one added row.
+- **Next / previous difference buttons**: while the TIA Viewer shows a comparison, up and down arrows in the
+  editor title bar jump to the previous / next difference (wrapping around at the ends), like in the text diff
+  editor. They work for blocks, data blocks, SCL / STL code, LAD networks and tag tables, and the other side
+  scrolls along. Also available as "TIA: Next Difference" and "TIA: Previous Difference".
+
 ## [0.0.9]
 
 - **PLC tag tables in the TIA Viewer**: the Openness XML of a tag table (the *PLC tags* folder) opens like TIA
