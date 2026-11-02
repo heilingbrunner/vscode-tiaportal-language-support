@@ -93,6 +93,16 @@
                 "title": "TIA: Open Viewer to the Side"
             },
             {
+                "command": "tia.nextDifference",
+                "title": "TIA: Next Difference",
+                "icon": "$(arrow-down)"
+            },
+            {
+                "command": "tia.previousDifference",
+                "title": "TIA: Previous Difference",
+                "icon": "$(arrow-up)"
+            },
+            {
                 "command": "tia.searchInFolder",
                 "title": "TIA: Search in Folder…"
             },
@@ -106,9 +116,27 @@
                 {
                     "command": "tia.searchInFolder",
                     "when": "false"
+                },
+                {
+                    "command": "tia.nextDifference",
+                    "when": "tia.inCompare"
+                },
+                {
+                    "command": "tia.previousDifference",
+                    "when": "tia.inCompare"
                 }
             ],
             "editor/title": [
+                {
+                    "command": "tia.previousDifference",
+                    "when": "tia.inCompare && (resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl || resourceExtname == .s7dcl || resourceExtname == .s7res)",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "tia.nextDifference",
+                    "when": "tia.inCompare && (resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl || resourceExtname == .s7dcl || resourceExtname == .s7res)",
+                    "group": "navigation@2"
+                },
                 {
                     "command": "tia.openViewer",
                     "when": "resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl || resourceExtname == .s7dcl || resourceExtname == .s7res",

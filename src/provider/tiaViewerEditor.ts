@@ -142,9 +142,36 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
         // closing one side ends the comparison, so the other viewer shows its file without marks again
         this.pairs.release(document.uri);
       }
+      this.updateCompareContext();
     });
+    subscriptions.push(
+      panel.onDidChangeViewState(() => this.updateCompareContext()),
+      this.pairs.onDidChange(() => this.updateCompareContext()),
+    );
     this.pairWithOpenRevision(document.uri);
+    this.updateCompareContext();
     await render();
+  }
+
+  /** The visible viewers that are one half of a comparison; the focused one comes first. */
+  private comparedPanels(): vscode.WebviewPanel[] {
+    const panels = [...this.openPanels.entries()].flatMap(([key, list]) => {
+      const side = this.pairs.get(vscode.Uri.parse(key))?.side;
+      return side ? list.filter((p) => p.visible).map((panel) => ({ panel, side })) : [];
+    });
+    // without focus in either viewer the working-tree side (the live file) is the one to drive
+    const rank = ({ panel, side }: { panel: vscode.WebviewPanel; side: string }): number => (panel.active ? 0 : side === 'new' ? 1 : 2);
+    return panels.sort((a, b) => rank(a) - rank(b)).map(({ panel }) => panel);
+  }
+
+  /** Shows the difference buttons whenever a comparison is visible, not only while one of its viewers has focus. */
+  private updateCompareContext(): void {
+    void vscode.commands.executeCommand('setContext', 'tia.inCompare', this.comparedPanels().length > 0);
+  }
+
+  /** Scrolls a viewer of the comparison to the next or previous difference (its counterpart follows by the scroll relay). */
+  goToDifference(direction: 'next' | 'previous'): void {
+    void this.comparedPanels()[0]?.webview.postMessage({ type: 'difference', direction });
   }
 
   /**

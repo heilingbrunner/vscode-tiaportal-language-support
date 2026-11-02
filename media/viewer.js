@@ -224,8 +224,58 @@
     );
   }
 
+  // The vertical positions (scroll targets) of the differing places; neighbouring marks form one place.
+  var MARKED = '.diff-del, .diff-add, .net-diff-del, .net-diff-add, .has-diff-del, .has-diff-add';
+  var DIFF_MARGIN = 80;
+  var DIFF_JOIN_GAP = 4;
+
+  function differenceTargets() {
+    var rects = [];
+    Array.prototype.forEach.call(document.querySelectorAll(MARKED), function (el) {
+      if (el.getClientRects().length === 0) {
+        return; // hidden, for example inside a collapsed row
+      }
+      var rect = el.getBoundingClientRect();
+      rects.push({ top: rect.top + window.scrollY, bottom: rect.bottom + window.scrollY });
+    });
+    rects.sort(function (a, b) {
+      return a.top - b.top;
+    });
+    var targets = [];
+    var groupBottom = -Infinity;
+    rects.forEach(function (rect) {
+      if (rect.top - groupBottom > DIFF_JOIN_GAP) {
+        targets.push(Math.max(0, rect.top - DIFF_MARGIN));
+      }
+      groupBottom = Math.max(groupBottom, rect.bottom);
+    });
+    return targets;
+  }
+
+  /** Scrolls to the next (or previous) difference, wrapping around at the ends like the text diff editor. */
+  function jumpToDifference(direction) {
+    var targets = differenceTargets();
+    if (targets.length === 0) {
+      return;
+    }
+    var y = window.scrollY;
+    var found;
+    if (direction === 'next') {
+      found = targets.filter(function (t) { return t > y + 2; })[0];
+      found = found === undefined ? targets[0] : found;
+    } else {
+      var before = targets.filter(function (t) { return t < y - 2; });
+      found = before.length > 0 ? before[before.length - 1] : targets[targets.length - 1];
+    }
+    window.scrollTo(window.scrollX, found);
+  }
+
   window.addEventListener('message', function (event) {
     var message = event.data;
+    if (message && message.type === 'difference') {
+      jumpToDifference(message.direction === 'previous' ? 'previous' : 'next');
+      return;
+    }
     if (!message || message.type !== 'scroll' || typeof message.target !== 'string') {
       return;
     }

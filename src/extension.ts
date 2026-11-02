@@ -10,6 +10,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const highlighter = new HighlighterService(context.extensionUri);
   const pairs = new ComparePairs();
   const search = new SearchPanel(context.extensionUri);
+  const viewer = new TiaViewerEditorProvider(context.extensionUri, udts, highlighter, pairs);
   context.subscriptions.push(
     udts,
     highlighter,
@@ -18,9 +19,9 @@ export function activate(context: vscode.ExtensionContext): void {
     // from the Explorer the folder is passed in; from the command palette the view opens on the workspace folder
     vscode.commands.registerCommand('tia.searchInFolder', (folder?: vscode.Uri) => search.show(folder)),
     vscode.commands.registerCommand('tia.searchInProject', () => search.show()),
-    vscode.window.registerCustomEditorProvider(VIEW_TYPE, new TiaViewerEditorProvider(context.extensionUri, udts, highlighter, pairs), {
-      supportsMultipleEditorsPerDocument: true,
-    }),
+    vscode.window.registerCustomEditorProvider(VIEW_TYPE, viewer, { supportsMultipleEditorsPerDocument: true }),
+    vscode.commands.registerCommand('tia.nextDifference', () => viewer.goToDifference('next')),
+    vscode.commands.registerCommand('tia.previousDifference', () => viewer.goToDifference('previous')),
     vscode.commands.registerCommand('tia.openViewer', async (resource?: vscode.Uri) => {
       const uri = resource ?? vscode.window.activeTextEditor?.document.uri;
       if (!uri) {
