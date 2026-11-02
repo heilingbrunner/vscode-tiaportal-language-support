@@ -1,7 +1,14 @@
 import { attributeOf, child, childrenNamed, parseXml, pickText, type XNode } from './xml';
 
+/** Set by a version comparison: the whole row differs (no `fields`) or only the named cells. */
+export interface RowDiff {
+  mark: 'add' | 'del';
+  fields?: string[];
+}
+
 export interface PlcTag {
   name: string;
+  diff?: RowDiff;
   dataType: string;
   /** The logical address such as `%I1300.3`; empty for a tag without one. */
   address: string;
@@ -15,6 +22,7 @@ export interface PlcTag {
 
 export interface PlcConstant {
   name: string;
+  diff?: RowDiff;
   dataType: string;
   value: string;
   comment: string;

@@ -7,6 +7,7 @@ import { parseAwl, parseScl } from '../parser/sclParser';
 import { isTagTableSource, parseTagTable, type TagTable } from '../parser/tagTableParser';
 import { parseUdtModel } from '../parser/udtParser';
 import { diffModels } from '../diff/modelDiff';
+import { diffTagTables } from '../diff/tagTableDiff';
 import type { BlockModel } from '../model/types';
 import { renderBlockHtml, renderMessageHtml, type HtmlAssets } from '../render/html';
 import { withHighlighting } from '../render/sclHighlighter';
@@ -198,11 +199,19 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
     if ('message' in result) {
       return renderMessageHtml(result.message, assets);
     }
-    if ('tagTable' in result) {
-      // a tag table has no version comparison yet: both sides of a compare just show their table
-      return renderTagTableHtml(result.tagTable, assets);
-    }
     const peer = this.pairs.get(uri);
+    if ('tagTable' in result) {
+      // an unreadable or different-kind counterpart only costs the marks: this table is still shown
+      const otherResult = peer ? await this.readModel(peer.other) : undefined;
+      if (!peer || !otherResult || !('tagTable' in otherResult)) {
+        return renderTagTableHtml(result.tagTable, assets);
+      }
+      const tables =
+        peer.side === 'old'
+          ? diffTagTables(result.tagTable, otherResult.tagTable)
+          : diffTagTables(otherResult.tagTable, result.tagTable);
+      return renderTagTableHtml(peer.side === 'old' ? tables.oldTable : tables.newTable, assets);
+    }
     if (!peer) {
       return renderBlockHtml(result.model, assets);
     }
