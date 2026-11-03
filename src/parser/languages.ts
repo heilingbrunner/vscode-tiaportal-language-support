@@ -7,8 +7,8 @@ export interface LanguageInfo {
 }
 
 /** Languages that have a fail-safe variant in TIA Portal. */
-const SAFETY_LANGUAGES = new Set(['LAD', 'FBD']);
-/** Openness writes `F_LAD` / `F_FBD`; the SD format writes the plain language and flags the block with `S7_Safety`. */
+const SAFETY_LANGUAGES = new Set(['LAD', 'FBD', 'DB']);
+/** Openness writes `F_LAD` / `F_FBD` / `F_DB`; the SD format writes the plain language and flags the block with `S7_Safety`. */
 const FAIL_SAFE = /^F[_-]([A-Z]+)$/;
 
 /** Reads the language name of an export (`LAD`, `F_FBD`, `F-LAD`, ...), case-insensitively. */

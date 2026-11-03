@@ -172,6 +172,8 @@ function headerProps(model: BlockModel): string {
     return `<span>Language: ${escapeHtml(model.language)}</span><span>Memory: ${escapeHtml(model.memoryLayout)}</span>`;
   }
   const fields: Array<[string, string]> = [
+    // only the fail-safe variant is named: a standard data block is just "DB"
+    ['Language', model.language === 'DB' ? '' : model.language],
     ['Optimized block access', info.optimizedAccess ? 'Yes' : 'No'],
     ['Version', info.version],
     ['Author', info.author],

@@ -187,7 +187,8 @@ function dataBlockModel(source: string, texts: TextTable | undefined, resolve: U
     kind: 'DB',
     name,
     number: attributes.s7_blocknumber ?? '',
-    language: 'DB',
+    // a data block flagged `S7_Safety` is a fail-safe data block (F-DB)
+    language: displayLanguage(parseLanguage('DB', isTrue(attributes.s7_safety))),
     memoryLayout: optimizedAccess ? 'Optimized' : 'Standard',
     title: textOf(texts, attributes.s7_blocktitle),
     comment: textOf(texts, attributes.s7_blockcomment),

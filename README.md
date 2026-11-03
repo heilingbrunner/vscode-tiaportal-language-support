@@ -11,7 +11,7 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 - **`LAD` networks** drawn as ladder diagrams, with zoom.
 - **`FBD` networks** drawn as function block diagrams (`&`, `>=1`, `=1` boxes, `=` / `S` / `R` assignments, operands at the pins).
 - **Absolute addresses** of PLC tags (`%M1.2`) in an address column next to STL operands and below the operands of LAD / FBD networks, looked up from the PLC tag tables of the workspace, like TIA Portal.
-- **Fail-safe `F-LAD` / `F-FBD`** (safety programs): recognised in Openness XML (`F_LAD`, `F_FBD`) and in SD format (`S7_Safety`), drawn like LAD / FBD and labelled as fail-safe.
+- **Fail-safe `F-LAD` / `F-FBD` / `F-DB`** (safety programs): recognised in Openness XML (`F_LAD`, `F_FBD`, `F_DB`) and in SD format (`S7_Safety`), drawn like LAD / FBD / DB and labelled as fail-safe.
 - **`SCL` / `STL` code** with line numbers, folding and a `REGION` outline.
 - **TIA Viewer**: read-only, TIA-style view of Openness XML and `.db`, `.udt`, `.s7dcl` (with its `.s7res`), `.scl`, `.awl`, `.stl` files.
 - **PLC tag tables** in the layout of TIA's tag table editor, with Tags and User constants tabs.

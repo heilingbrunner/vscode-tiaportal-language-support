@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,6 +31,10 @@ describe('language names', () => {
     ['SCL', true, 'SCL'],
     ['STL', true, 'STL'],
     ['SCL', false, 'SCL'],
+    ['F_DB', false, 'F-DB'],
+    ['f-db', false, 'F-DB'],
+    ['DB', true, 'F-DB'],
+    ['DB', false, 'DB'],
   ])('reads %s (block safety %s) as %s', (raw, safe, shown) => {
     expect(displayLanguage(parseLanguage(raw, safe))).toBe(shown);
   });
@@ -187,5 +191,43 @@ END_FUNCTION_BLOCK`;
     expect(body?.kind).toBe('code');
     const tokens = body?.kind === 'code' ? body.tokens?.flat() : undefined;
     expect(tokens?.find((t) => t.text === 'ESTOP1')?.cls).toBe('c-instruction');
+  });
+});
+
+describe('F-DB in SD format', () => {
+  const dataBlock = (safety: string): string => `{
+    S7_BlockNumber := "8010";
+    S7_Optimized := "TRUE";
+    ${safety}
+    S7_StandardRetain := "FALSE";
+    S7_Version := "0.1"
+}
+DATA_BLOCK "F_DB_Demo"
+    VAR
+        a : Bool;
+    END_VAR
+END_DATA_BLOCK`;
+
+  it('marks a data block flagged S7_Safety as F-DB', () => {
+    for (const flag of ['S7_Safety := "TRUE";', 'S7_Safety := "True";']) {
+      const model = parseS7dclModel(dataBlock(flag));
+      expect(model.kind).toBe('DB');
+      expect(model.language).toBe('F-DB');
+    }
+  });
+
+  it('leaves a standard data block as DB', () => {
+    expect(parseS7dclModel(dataBlock('')).language).toBe('DB');
+    expect(parseS7dclModel(dataBlock('S7_Safety := "FALSE";')).language).toBe('DB');
+  });
+
+  it('names the fail-safe variant in the header of the data block view only', () => {
+    expect(renderBlockHtml(parseS7dclModel(dataBlock('S7_Safety := "TRUE";')), assets)).toContain('<span>Language: F-DB</span>');
+    expect(renderBlockHtml(parseS7dclModel(dataBlock('')), assets)).not.toContain('Language:');
+  });
+
+  const sample = join(root, 'test', 'Project', '=CS+UC06-KF101', 'Program blocks', 'Safety', 'F_DB_SafetyVariables.s7dcl');
+  it.skipIf(!existsSync(sample))('shows the F_DB of the local sample project as F-DB', () => {
+    expect(parseS7dclModel(readFileSync(sample, 'utf-8')).language).toBe('F-DB');
   });
 });

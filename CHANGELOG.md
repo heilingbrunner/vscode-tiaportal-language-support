@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- **Fail-safe data blocks (F-DB)**: an SD format `DATA_BLOCK` flagged `S7_Safety := "TRUE"` (and the Openness
+  language name `F_DB`) is recognised as an F-DB. The data block view shows `Language: F-DB` in its header;
+  standard data blocks show no language, as before.
+
 - **Absolute addresses like TIA Portal**: operands that name a PLC tag show the tag's address (`%M1.2`,
   `%MW10`), taken from the PLC tag table exports in the workspace. STL networks get an address column on the
   right (literals such as `L 0` are repeated there); in LAD / FBD networks the address stands in small text
