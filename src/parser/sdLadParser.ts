@@ -87,6 +87,22 @@ const ELEMENTS: Record<string, ElementDef> = {
   S_SR: { name: 'S_SR', flowIn: 's1', flowOut: 'q', operandPin: 'operand' },
 };
 
+/** FBD logic boxes: the operands go straight to the box inputs, so the flow enters at `in1`. */
+const fbdBox = (name: string): ElementDef => ({ name, flowIn: 'in1', flowOut: 'out' });
+const FBD_ELEMENTS: Record<string, ElementDef> = {
+  A: fbdBox('And'),
+  AND: fbdBox('And'),
+  O: fbdBox('Or'),
+  OR: fbdBox('Or'),
+  X: fbdBox('Xor'),
+  XOR: fbdBox('Xor'),
+  // `Return()` is the RET box of FBD, an assignment without operand
+  RETURN: { name: 'RetCoil', flowIn: 'in', flowOut: 'out' },
+};
+
+/** Coils that FBD draws as assignment boxes (`=`, `S`, `R`, `RET`, `JMP`). */
+const FBD_ASSIGNMENTS = new Set(['Coil', 'SCoil', 'RCoil', 'RetCoil', 'JCoil']);
+
 const TIMERS = new Set(['TON', 'TOF', 'TP']);
 const BARE_NAME = /^[A-Za-z_]\w*$/;
 
@@ -366,6 +382,7 @@ class Builder {
   constructor(
     private readonly rungs: Rung[],
     private readonly labels: string[] = [],
+    private readonly fbd = false,
   ) {
     this.outputs = rungs.map(() => undefined);
     rungs.forEach((rung, i) => {
@@ -385,7 +402,8 @@ class Builder {
 
   build(): FlgNet {
     this.rungs.forEach((_, i) => this.emitRung(i));
-    return { accesses: this.accesses, parts: this.parts, wires: [...this.wires.values()], labels: this.labels };
+    const net: FlgNet = { accesses: this.accesses, parts: this.parts, wires: [...this.wires.values()], labels: this.labels };
+    return this.fbd ? { ...net, fbd: true } : net;
   }
 
   private newUid(): string {
@@ -415,7 +433,7 @@ class Builder {
       return only;
     }
     const uid = this.newUid();
-    this.parts.set(uid, newPart(uid, 'O'));
+    this.parts.set(uid, newPart(uid, this.fbd ? 'Or' : 'O'));
     signals.forEach((s, i) => this.flow(s, { kind: 'name', uid, pin: `in${i + 1}` }));
     return { kind: 'name', uid, pin: 'out' };
   }
@@ -465,9 +483,15 @@ class Builder {
     const rung = this.rungs[index] as Rung;
     let cur = this.nodeSignal(rung.start);
     if (rung.startOperand !== undefined) {
-      // an FBD input operand is a contact in ladder terms
-      const args: Arg[] = [{ name: '', dir: '', value: rung.startOperand }];
-      cur = this.element(cur, { kind: 'element', callee: 'Contact', args, templates: {} });
+      const hasElement = rung.items.some((i) => i.kind === 'element');
+      if (this.fbd && hasElement) {
+        // an FBD input operand is wired straight to the first pin of the next box
+        cur = this.access(rung.startOperand);
+      } else {
+        // in ladder terms it is a contact
+        const args: Arg[] = [{ name: '', dir: '', value: rung.startOperand }];
+        cur = this.element(cur, { kind: 'element', callee: 'Contact', args, templates: {} });
+      }
     }
     for (const item of rung.items) {
       if (item.kind === 'wire') {
@@ -499,7 +523,8 @@ class Builder {
       }
       this.connectArg(part.uid, pin, arg);
     }
-    return { kind: 'name', uid: part.uid, pin: def.flowOut };
+    // an FBD assignment has no output pin, so the next element hangs off the same signal
+    return this.fbd && FBD_ASSIGNMENTS.has(part.name) ? cur : { kind: 'name', uid: part.uid, pin: def.flowOut };
   }
 
   private connectArg(uid: string, pin: string, arg: Arg): void {
@@ -520,7 +545,8 @@ class Builder {
   private describe(item: ElementItem): { part: FlgPart; def: ElementDef } {
     const uid = this.newUid();
     const key = item.callee.toUpperCase();
-    const known = Object.hasOwn(ELEMENTS, key) ? ELEMENTS[key] : undefined;
+    const table = this.fbd && Object.hasOwn(FBD_ELEMENTS, key) ? FBD_ELEMENTS : ELEMENTS;
+    const known = Object.hasOwn(table, key) ? table[key] : undefined;
     if (known) {
       const part = newPart(uid, known.name);
       part.templates = item.templates;
@@ -554,8 +580,8 @@ class Builder {
   }
 }
 
-/** Parses the rungs of one SD-format LAD network. Throws when the text is not understood. */
-export function parseSdLad(lines: string[]): FlgNet {
+/** Parses the rungs of one SD-format LAD or FBD network. Throws when the text is not understood. */
+export function parseSdLad(lines: string[], fbd = false): FlgNet {
   const { rungs, labels } = readRungs(lines.join('\n'));
-  return new Builder(rungs, labels).build();
+  return new Builder(rungs, labels, fbd).build();
 }

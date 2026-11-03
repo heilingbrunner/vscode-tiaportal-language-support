@@ -31,7 +31,8 @@
         "udt",
         "scl",
         "s7dcl",
-        "s7res"
+        "s7res",
+        "fbd"
     ],
     "main": "./dist/extension.js",
     "scripts": {
@@ -221,6 +222,17 @@
                     ".s7dcl"
                 ],
                 "configuration": "./language-configuration.json"
+            },
+            {
+                "id": "fbd",
+                "aliases": [
+                    "TIA Portal: FBD",
+                    "fbd"
+                ],
+                "extensions": [
+                    ".fbd"
+                ],
+                "configuration": "./language-configuration.json"
             }
         ],
         "grammars": [
@@ -248,6 +260,11 @@
                 "language": "s7dcl",
                 "scopeName": "source.tia.s7dcl",
                 "path": "./syntaxes/s7dcl.tmLanguage.json"
+            },
+            {
+                "language": "fbd",
+                "scopeName": "source.tia.fbd",
+                "path": "./syntaxes/fbd.tmLanguage.json"
             }
         ]
     }

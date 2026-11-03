@@ -6,9 +6,10 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 
 ## Features
 
-- **Syntax highlighting** for `SCL`, `AWL` / `STL`, `DB`, `UDT` and `S7DCL` sources.
+- **Syntax highlighting** for `SCL`, `AWL` / `STL`, `DB`, `UDT`, `S7DCL` and `FBD` sources.
 - **`UDT` lookup** from the workspace; views refresh when a file changes.
 - **`LAD` networks** drawn as ladder diagrams, with zoom.
+- **`FBD` networks** drawn as function block diagrams (`&`, `>=1`, `=1` boxes, `=` / `S` / `R` assignments, operands at the pins).
 - **`SCL` / `STL` code** with line numbers, folding and a `REGION` outline.
 - **TIA Viewer**: read-only, TIA-style view of Openness XML and `.db`, `.udt`, `.s7dcl` (with its `.s7res`), `.scl`, `.awl`, `.stl` files.
 - **PLC tag tables** in the layout of TIA's tag table editor, with Tags and User constants tabs.
@@ -26,6 +27,7 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 | [DB](#db--data-block)                    | `.db`          | `source.tia.db`  |
 | [UDT](#udt--user-defined-type)           | `.udt`         | `source.tia.udt` |
 | [S7DCL](#s7dcl--sd-format)               | `.s7dcl`       | `source.tia.s7dcl` |
+| [FBD](#fbd--function-block-diagram-source) | `.fbd`       | `source.tia.fbd` |
 
 All grammars share the same scope suffix (`.tia`), so one theme rule such as `keyword.control.tia` applies to every language.
 
@@ -85,6 +87,15 @@ SD format sources of TIA Portal V20 and later (`.s7dcl`, texts in a sibling `.s7
 - LAD source text: `RUNG` and `wire#…` names.
 - Everything else falls back to the SCL grammar.
 
+### FBD – Function Block Diagram source
+
+FBD has no text format of its own: TIA Portal exports FBD networks as `RUNG` source inside SD format (`.s7dcl`) files. The `FBD` grammar (`.fbd`, scope `source.tia.fbd`) is that rung syntax on top of the S7DCL grammar, and the TIA Viewer uses it for FBD networks it cannot draw:
+
+- Logic boxes `A` / `AND`, `O` / `OR`, `X` / `XOR`, and the output boxes `Coil`, `S_Coil`, `R_Coil`, `Return_Coil`, `JumpCoil` / `I_JumpCoil` as instructions.
+- Instruction boxes (`Move`, `Convert`, `Calculate`, math, comparators, `Sel`, `Mux`, timers, counters, edge and flip-flop boxes) as instructions.
+- Box pins (`en`, `eno`, `in1`…, `out`, `q`, `et`, …) before `:=` / `=>` as parameters.
+- `Label( … )`, `RUNG` / `END_RUNG`, `wire#…` names and attribute blocks.
+
 ## TIA Viewer
 
 A read-only viewer for TIA Portal exports: Openness XML (`*.xml`) and the text sources `*.db`, `*.udt`, `*.s7dcl`, `*.scl`, `*.awl` and `*.stl`. Open a file with *Reopen Editor With… > TIA Viewer*, or run *TIA: Open Viewer to the Side*. Changes can be compared in the viewer too, see [git diff](#git-diff). The setting `tiaViewer.culture` (for example `de-DE`) selects the language of titles and comments.
@@ -94,6 +105,7 @@ A read-only viewer for TIA Portal exports: Openness XML (`*.xml`) and the text s
 Blocks exported as Openness XML (FB, FC, OB). The viewer shows the interface table, block and network titles/comments and the networks:
 
 - **LAD** is drawn as a ladder diagram: contacts (incl. negated and edge), coils (`S`, `R`), OR branches, FB/FC calls with instance and parameters, timers, comparators, math and `Move`. Parts without a dedicated symbol are drawn as a generic box.
+- **FBD** is drawn as a function block diagram: no power rail, operands at the box inputs and outputs, logic boxes titled `&` (And), `>=1` (Or) and `=1` (Xor), coils as assignment boxes (`=`, `S`, `R`, `RET`, `JMP`), and FB/FC calls, timers, comparators, math and `Move` as boxes like in LAD.
 - **SCL** and **STL** networks are shown as source text.
 
 Callee block numbers (`%FB1`, `%DB43`) are not part of the export and are not shown.
@@ -228,3 +240,7 @@ npm run tokenize -- --dir <samples> --ext <scl|awl|db|udt> [--strict] [--top 25]
 ### SD Format
 
 - [Exporting and Importing Blocks in Simatic SD Format](https://docs.tia.siemens.cloud/r/en-us/v21/creating-and-managing-blocks/exporting-and-importing-blocks-in-simatic-sd-format-s7-1200-s7-1500-s7-1200-g2)
+
+### FBD – Function Block Diagram
+
+- [Creating FBD Programs](https://docs.tia.siemens.cloud/r/en-us/v21/creating-fbd-programs)  

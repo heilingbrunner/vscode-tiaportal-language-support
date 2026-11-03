@@ -38,6 +38,8 @@ export interface FlgNet {
   wires: FlgWire[];
   /** Jump labels declared before the rungs (SD format only). */
   labels?: string[];
+  /** FBD network: drawn without a power rail, coils as `=` boxes and operands directly at the box pins. */
+  fbd?: boolean;
 }
 
 function parseConn(node: XNode): Conn | undefined {

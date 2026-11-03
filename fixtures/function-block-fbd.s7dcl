@@ -1,0 +1,109 @@
+﻿{
+    S7_BlockNumber := "1";
+    S7_Optimized := "TRUE";
+    S7_PreferredLanguage := "FBD";
+    S7_Safety := "TRUE";
+    S7_Version := "0.1"
+}
+FUNCTION_BLOCK "Main_Safety_RTG1"
+    VAR
+        {
+            S7_Access := "ReadOnly := External";
+            S7_Visibility := "Hidden := External"
+        }
+        TOF_IOCheckActive : TOF;
+        {
+            S7_Access := "ReadOnly := External";
+            S7_Visibility := "Hidden := External"
+        }
+        FP_IOCheckActive : Bool;
+        {
+            S7_Access := "ReadOnly := External";
+            S7_Visibility := "Hidden := External"
+        }
+        SafetyOverruled : Bool;
+        Safety_ACK : _.FB_Safety_ACK;
+    END_VAR
+
+    {
+        S7_Language := "FBD";
+        S7_NetworkTitle := "MLC_4jm"
+    }
+    NETWORK
+        RUNG
+            P_Contact(
+                operand := "IOCheckRequest",
+                bit := #FP_IOCheckActive
+            )
+            {
+                f_user_card := "1"; 
+                f_image_card := "0"; 
+                f_imageclassic_card := "0"; 
+                f_imageplus_card := "0"
+            }
+            #TOF_IOCheckActive.TOF(
+                pt := t#120m,
+                et => "IOCheckRemainTime"
+            )
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "FBD";
+        S7_NetworkTitle := "MLC_3xD"
+    }
+    NETWORK
+        RUNG "IOCheckRequest"
+            A( in2 := #TOF_IOCheckActive.Q )
+            Coil( "IOCheckActive" )
+            Coil( #SafetyOverruled )
+        END_RUNG
+    END_NETWORK
+    { S7_Language := "FBD" }
+    NETWORK
+        RUNG
+            #Safety_ACK()
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "FBD";
+        S7_NetworkTitle := "MLC_3gw"
+    }
+    NETWORK
+        RUNG #SafetyOverruled
+            I_JumpCoil( GENERALSAFETY )
+        END_RUNG
+    END_NETWORK
+    { S7_Language := "FBD" }
+    NETWORK
+        RUNG
+            "FC_SafetyIOCheck"()
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "FBD";
+        S7_NetworkTitle := "MLC_dz"
+    }
+    NETWORK
+        RUNG
+            Return()
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "FBD";
+        S7_NetworkTitle := "MLC_3r6"
+    }
+    NETWORK
+        Label(GENERALSAFETY)
+        RUNG
+            "FB_GeneralSafety"()
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "FBD";
+        S7_NetworkTitle := "MLC_4k6"
+    }
+    NETWORK
+        RUNG
+        END_RUNG
+    END_NETWORK
+END_FUNCTION_BLOCK

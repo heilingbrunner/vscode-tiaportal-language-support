@@ -2,12 +2,13 @@ import * as oniguruma from 'vscode-oniguruma';
 import * as textmate from 'vscode-textmate';
 import type { BlockModel, CodeToken } from '../model/types';
 
-export type HighlightLanguage = 'scl' | 'awl' | 's7dcl';
+export type HighlightLanguage = 'scl' | 'awl' | 's7dcl' | 'fbd';
 
 const SCOPE_NAMES: Record<HighlightLanguage, string> = {
   scl: 'source.tia.scl',
   awl: 'source.tia.awl',
   s7dcl: 'source.tia.s7dcl',
+  fbd: 'source.tia.fbd',
 };
 /**
  * Lines fed to the grammar before the code: the AWL grammar only recognises instructions after it has
@@ -17,6 +18,7 @@ const PREAMBLES: Record<HighlightLanguage, readonly string[]> = {
   scl: [],
   awl: ['BEGIN'],
   s7dcl: [],
+  fbd: [],
 };
 const MAX_LINES = 50_000;
 /** Per-line tokenizing budget in milliseconds; a line that exceeds it is shown unhighlighted. */
@@ -33,11 +35,12 @@ export interface SclHighlighter {
   tokenize(lines: readonly string[]): CodeToken[][];
 }
 
-/** The highlighters available to a view: `scl` for SCL code, `awl` for STL networks, `s7dcl` for LAD source text. */
+/** The highlighters available to a view: `scl` for SCL code, `awl` for STL networks, `s7dcl` for LAD and `fbd` for FBD source text. */
 export interface HighlighterSet {
   scl?: SclHighlighter;
   awl?: SclHighlighter;
   s7dcl?: SclHighlighter;
+  fbd?: SclHighlighter;
 }
 
 /** First matching rule wins; scopes are checked from the most specific (last) one. */
@@ -157,7 +160,21 @@ export async function createHighlighter(language: HighlightLanguage, loaders: Hi
 export const createSclHighlighter = (loaders: HighlighterLoaders): Promise<SclHighlighter> => createHighlighter('scl', loaders);
 export const createAwlHighlighter = (loaders: HighlighterLoaders): Promise<SclHighlighter> => createHighlighter('awl', loaders);
 
-/** Returns a copy of the model whose code and code networks carry highlight tokens (SCL or STL as appropriate). */
+function highlighterFor(language: string, highlighters: HighlighterSet): SclHighlighter | undefined {
+  switch (language) {
+    case 'STL':
+      return highlighters.awl;
+    case 'LAD':
+      return highlighters.s7dcl;
+    case 'FBD':
+      // without the FBD grammar the shared LAD one still colours the rung syntax
+      return highlighters.fbd ?? highlighters.s7dcl;
+    default:
+      return highlighters.scl;
+  }
+}
+
+/** Returns a copy of the model whose code and code networks carry highlight tokens (SCL, STL, LAD or FBD as appropriate). */
 export function withHighlighting(model: BlockModel, highlighters: HighlighterSet): BlockModel {
   const code =
     model.code && highlighters.scl ? { ...model.code, tokens: highlighters.scl.tokenize(model.code.lines) } : model.code;
@@ -166,8 +183,7 @@ export function withHighlighting(model: BlockModel, highlighters: HighlighterSet
     if (body.kind !== 'code') {
       return network;
     }
-    const highlighter =
-      body.language === 'STL' ? highlighters.awl : (body.language === 'LAD' || body.language === 'FBD') ? highlighters.s7dcl : highlighters.scl;
+    const highlighter = highlighterFor(body.language, highlighters);
     return highlighter ? { ...network, body: { ...body, tokens: highlighter.tokenize(body.lines) } } : network;
   });
   return { ...model, code, networks };

@@ -7,10 +7,11 @@ import { attributeOf, child, childrenNamed, parseXml, pickText, type XNode } fro
 
 const BLOCK_NODE = /^SW\.Blocks\.(FB|FC|OB)$/;
 
-function parseBody(source: XNode | undefined): NetworkBody {
+function parseBody(source: XNode | undefined, language: string): NetworkBody {
   switch (source?.name) {
     case 'FlgNet': {
-      const net = parseFlgNet(source);
+      const parsed = parseFlgNet(source);
+      const net = language.toUpperCase() === 'FBD' ? { ...parsed, fbd: true } : parsed;
       return net.parts.size === 0 ? { kind: 'empty' } : { kind: 'lad', scene: layoutLad(net) };
     }
     case 'StatementList':
@@ -28,7 +29,7 @@ function parseNetwork(unit: XNode, index: number, culture: string): NetworkModel
     ?? child(child(unit, 'AttributeList'), 'NetworkSource')?.children[0];
   let body: NetworkBody;
   try {
-    body = parseBody(source);
+    body = parseBody(source, attributeOf(unit, 'ProgrammingLanguage') ?? '');
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unknown error';
     body = { kind: 'text', language: 'error', lines: [`Network could not be rendered: ${message}`] };

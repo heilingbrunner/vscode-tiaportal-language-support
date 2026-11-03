@@ -58,6 +58,10 @@ interface BoxDef {
   labels?: Record<string, string>;
   /** The instance and operand lines go below the box instead of above it. */
   operandBelow?: boolean;
+  /** No pin labels at all (FBD logic boxes and coils only show their symbol). */
+  bare?: boolean;
+  /** The `operand` goes above the box and the `bit` (edge memory) below it. */
+  edgeBit?: boolean;
 }
 
 const math = (title: string): BoxDef => ({ title, left: ['en', 'in1', 'in2'], right: ['eno', 'out'] });
@@ -73,7 +77,27 @@ const trig = (title: string): BoxDef => ({
   operandBelow: true,
 });
 
+/** FBD logic boxes (`&`, `>=1`, `=1`): two inputs to begin with, more when the network wires them. */
+const logic = (title: string): BoxDef => ({ title, left: ['in1', 'in2'], right: ['out'], bare: true });
+/** FBD assignments: TIA Portal draws a coil as a box titled `=` / `S` / `R` with the operand above it. */
+const assign = (title: string): BoxDef => ({ title, left: ['in'], right: [], bare: true });
+
+const LOGIC_BOXES = new Set(['And', 'A', 'Or', 'O', 'Xor', 'X']);
+
 const BOX_DEFS: Record<string, BoxDef> = {
+  And: logic('&'),
+  A: logic('&'),
+  Or: logic('>=1'),
+  O: logic('>=1'),
+  Xor: logic('=1'),
+  X: logic('=1'),
+  PContact: { title: 'P', left: ['in'], right: ['out'], bare: true, edgeBit: true },
+  NContact: { title: 'N', left: ['in'], right: ['out'], bare: true, edgeBit: true },
+  Coil: assign('='),
+  SCoil: assign('S'),
+  RCoil: assign('R'),
+  RetCoil: assign('RET'),
+  JCoil: assign('JMP'),
   Move: { title: 'MOVE', left: ['en', 'in'], right: ['eno', 'out1'] },
   Add: math('ADD'),
   Sub: math('SUB'),
@@ -229,6 +253,13 @@ function partPins(part: FlgPart, def: BoxDef | undefined, pins: PinMap): PinName
       right.push(`out${i}`);
     }
   }
+  if (LOGIC_BOXES.has(part.name)) {
+    // the `Card` template is the number of inputs, wired or not
+    const card = Math.min(Number.parseInt(part.templates.Card ?? '2', 10) || 2, MAX_CARD);
+    for (let i = 3; i <= card; i++) {
+      left.push(`in${i}`);
+    }
+  }
   for (const p of pins.values()) {
     const isExtra =
       !known.has(p.name) && !OPERAND_PINS.has(p.name) && !p.openOnly && !right.includes(p.name) && !left.includes(p.name);
@@ -247,6 +278,17 @@ function partPins(part: FlgPart, def: BoxDef | undefined, pins: PinMap): PinName
   };
 }
 
+/** A negated FBD coil is titled like in LAD (`JMPN`, otherwise the title with a slash). */
+function boxTitle(part: FlgPart, def: BoxDef | undefined): string {
+  if (!def) {
+    return part.name;
+  }
+  if (Object.hasOwn(COIL_MARKS, part.name) && part.negated.has('operand')) {
+    return part.name === 'JCoil' ? 'JMPN' : `/${def.title}`;
+  }
+  return def.title;
+}
+
 function boxNode(part: FlgPart, pins: PinMap): LNode {
   const def = part.isCall || !Object.hasOwn(BOX_DEFS, part.name) ? undefined : BOX_DEFS[part.name];
   const names = part.isCall ? callPins(part, pins) : partPins(part, def, pins);
@@ -255,16 +297,18 @@ function boxNode(part: FlgPart, pins: PinMap): LNode {
     .map((p) => p.accessIn as string);
   const labelLines = [part.instance, ...operandTexts].filter(Boolean);
   const labelsBelow = def?.operandBelow === true;
-  const headLines = labelsBelow ? [] : labelLines;
-  const footLines = labelsBelow ? labelLines : [];
-  const title = part.isCall ? `"${part.name}"` : (def?.title ?? part.name);
+  const bit = def?.edgeBit ? (pins.get('bit')?.accessIn ?? '') : '';
+  const aboveLines = def?.edgeBit ? [pins.get('operand')?.accessIn ?? ''].filter(Boolean) : labelLines;
+  const headLines = labelsBelow ? [] : aboveLines;
+  const footLines = labelsBelow ? labelLines : [bit].filter(Boolean);
+  const title = part.isCall ? `"${part.name}"` : boxTitle(part, def);
   const sub = part.isCall ? '' : (TYPE_TEMPLATES.map((k) => part.templates[k]).find(Boolean) ?? '');
   const describe = (list: string[], isLeft: boolean): PinDesc[] =>
     list.map((name, row) => {
       const state = pins.get(name);
       return {
         name,
-        label: def?.labels?.[name] ?? pinLabel(name),
+        label: def?.bare ? '' : (def?.labels?.[name] ?? pinLabel(name)),
         row,
         negated: part.negated.has(name),
         access: isLeft ? (state?.accessIn ?? '') : (state?.accessOut.join(', ') ?? ''),
@@ -305,9 +349,10 @@ function boxNode(part: FlgPart, pins: PinMap): LNode {
   };
 }
 
-export function describeNode(part: FlgPart, pins: PinMap | undefined): LNode {
+/** `fbd`: the network is FBD, so coils and the OR join are boxes instead of ladder symbols. */
+export function describeNode(part: FlgPart, pins: PinMap | undefined, fbd = false): LNode {
   const pinMap: PinMap = pins ?? new Map();
-  if (!part.isCall) {
+  if (!part.isCall && !fbd) {
     if (Object.hasOwn(CONTACT_EDGES, part.name)) {
       return symbolNode(part, 'contact', pinMap);
     }
@@ -317,6 +362,10 @@ export function describeNode(part: FlgPart, pins: PinMap | undefined): LNode {
     if (part.name === 'O') {
       return orNode(part, pinMap);
     }
+  } else if (!part.isCall && part.name === 'Contact') {
+    // a plain contact in an FBD network (not produced by TIA Portal itself) is still drawn as one;
+    // the edge contacts become P / N boxes
+    return symbolNode(part, 'contact', pinMap);
   }
   return boxNode(part, pinMap);
 }

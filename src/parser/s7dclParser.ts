@@ -205,7 +205,8 @@ function dataBlockModel(source: string, texts: TextTable | undefined, resolve: U
 const SECTION_WORDS = new Set(['VAR', 'VAR_INPUT', 'VAR_OUTPUT', 'VAR_IN_OUT', 'VAR_TEMP']);
 const END_NETWORK = /^\s*END_NETWORK\b/;
 const END_BLOCK = /^\s*END_(?:FUNCTION_BLOCK|FUNCTION|ORGANIZATION_BLOCK)\b/;
-const EMPTY_LAD_NETWORK = 'RUNG wire#powerrail END_RUNG';
+/** A rung without elements: `RUNG wire#powerrail END_RUNG` in LAD, a bare `RUNG END_RUNG` in FBD. */
+const EMPTY_LAD_NETWORK = /^RUNG(?: wire#powerrail)? END_RUNG$/;
 const MAX_NETWORKS = 5000;
 
 interface RawNetwork {
@@ -274,14 +275,14 @@ function readNetworks(text: string): RawNetwork[] {
 function networkModel(raw: RawNetwork, index: number, headerLanguage: string, texts: TextTable | undefined): NetworkModel {
   const language = (raw.attributes.s7_language ?? headerLanguage).toUpperCase();
   const isRung = language === 'LAD' || language === 'FBD';
-  const isEmpty = raw.lines.length === 0 || (isRung && raw.lines.join(' ').replace(/\s+/g, ' ').trim() === EMPTY_LAD_NETWORK);
+  const isEmpty = raw.lines.length === 0 || (isRung && EMPTY_LAD_NETWORK.test(raw.lines.join(' ').replace(/\s+/g, ' ').trim()));
   let body: NetworkModel['body'] = { kind: 'code', language, lines: raw.lines };
   if (isEmpty) {
     body = { kind: 'empty' };
   } else if (isRung) {
-    // drawn as a ladder diagram (FBD uses the same rung syntax); what the parser does not understand stays source text (highlighted by the grammar)
+    // drawn as a ladder or function block diagram (both use the same rung syntax); what the parser does not understand stays source text (highlighted by the grammar)
     try {
-      body = { kind: 'lad', scene: layoutLad(parseSdLad(raw.lines)) };
+      body = { kind: 'lad', scene: layoutLad(parseSdLad(raw.lines, language === 'FBD')) };
     } catch {
       body = { kind: 'code', language, lines: raw.lines };
     }

@@ -1,5 +1,16 @@
 # Change Log
 
+## [Unreleased]
+
+- **FBD networks drawn as function block diagrams**: networks with the programming language FBD (Openness XML
+  and `.s7dcl`) no longer look like ladder logic. There is no power rail, operands sit directly at the box
+  pins, `A` / `O` / `X` (`And` / `Or` / `Xor`) are boxes titled `&`, `>=1` and `=1`, and coils are assignment
+  boxes (`=`, `S`, `R`, `RET`, `JMP`, `JMPN`); several coils on one rung hang off the same signal. A bare
+  `RUNG … END_RUNG` shows as an empty network. LAD networks are drawn as before.
+- **Syntax highlighting for FBD** (`syntaxes/fbd.tmLanguage.json`, scope `source.tia.fbd`, language `fbd` for
+  `*.fbd`): the SD rung syntax with logic boxes, assignments, instruction boxes and box pins. The TIA Viewer
+  uses it for FBD networks it cannot draw.
+
 ## [0.0.10]
 
 - **PLC tag tables in the git diff view**: a tag table compared with its previous version now marks the

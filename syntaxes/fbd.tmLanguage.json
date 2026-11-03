@@ -1,0 +1,70 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "TIA.fbd",
+  "scopeName": "source.tia.fbd",
+  "fileTypes": ["fbd"],
+  "patterns": [
+    { "include": "source.tia.s7dcl#attributes" },
+    { "include": "source.tia.s7dcl#structure" },
+    { "include": "#label" },
+    { "include": "#rung" },
+    { "include": "source.tia.s7dcl#wires" },
+    { "include": "source.tia.s7dcl#global-scope" },
+    { "include": "source.tia.s7dcl#hex-literals" },
+    { "include": "source.tia.s7dcl#assignment-target" },
+    { "include": "source.tia.scl" },
+    { "include": "source.tia.s7dcl#bare-type" }
+  ],
+  "repository": {
+    "label": {
+      "match": "(?i)^\\s*(Label)\\s*(\\()\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(\\))",
+      "captures": {
+        "1": { "name": "keyword.control.label.tia" },
+        "2": { "name": "punctuation.section.arguments.begin.tia" },
+        "3": { "name": "entity.name.label.tia" },
+        "4": { "name": "punctuation.section.arguments.end.tia" }
+      }
+    },
+    "rung": {
+      "begin": "(?i)^\\s*(RUNG)\\b",
+      "beginCaptures": { "1": { "name": "keyword.control.rung.tia" } },
+      "end": "(?i)^\\s*(END_RUNG)\\b",
+      "endCaptures": { "1": { "name": "keyword.control.rung.tia" } },
+      "patterns": [
+        { "include": "source.tia.s7dcl#wires" },
+        { "include": "source.tia.s7dcl#global-scope" },
+        { "include": "source.tia.s7dcl#hex-literals" },
+        { "include": "#logic-boxes" },
+        { "include": "#assignments" },
+        { "include": "#instruction-boxes" },
+        { "include": "#pins" },
+        {
+          "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)(?=\\s*\\()",
+          "captures": { "1": { "name": "entity.name.function.ladder.tia" } }
+        },
+        { "match": "(?<![\\w#\".])[A-Za-z_][A-Za-z0-9_]*(?=\\s*(?::=|=>))", "name": "variable.parameter.tia" },
+        { "include": "source.tia.scl" }
+      ]
+    },
+    "logic-boxes": {
+      "comment": "AND / OR / XOR boxes (&, >=1, =1)",
+      "match": "(?i)^\\s*(A|AND|O|OR|X|XOR)(?=\\s*\\()",
+      "captures": { "1": { "name": "support.function.instruction.logic.fbd.tia" } }
+    },
+    "assignments": {
+      "comment": "Output boxes: =, S, R, RET and JMP",
+      "match": "(?i)^\\s*(Coil|S_Coil|R_Coil|Return_?Coil|Return|I_?Jump_?Coil|Jump_?Coil|Jump)(?=\\s*\\()",
+      "captures": { "1": { "name": "support.function.instruction.assignment.fbd.tia" } }
+    },
+    "instruction-boxes": {
+      "comment": "Instructions that TIA Portal draws as boxes in FBD",
+      "match": "(?i)^\\s*(Move|Convert|Calculate|Add|Sub|Mul|Div|Mod|Neg|Abs|Min|Max|Limit|Sqr|Sqrt|Inc|Dec|Sel|Mux|Demux|Not|Cmp|Eq|Ne|Gt|Lt|Ge|Le|Eq_Contact|Ne_Contact|Gt_Contact|Lt_Contact|Ge_Contact|Le_Contact|P_Contact|N_Contact|P_Trig|N_Trig|R_Trig|F_Trig|S_SR|R_SR|SR|RS|Shl|Shr|Rol|Ror|Swap|Fill_Blk|Blkmov|Ctu|Ctd|Ctud|Ton|Tof|Tp|Tonr)(?=\\s*\\()",
+      "captures": { "1": { "name": "support.function.instruction.box.fbd.tia" } }
+    },
+    "pins": {
+      "comment": "Standard box pins: EN / ENO, IN1.., OUT.., Q, ET, ...",
+      "match": "(?i)(?<![\\w#\".])(?:en|eno|in\\d*|out\\d*|pre|operand|bit|pt|et|q|qu|qd|cv|pv|cu|cd|s1?|r1?|clk)(?=\\s*(?::=|=>))",
+      "name": "variable.parameter.pin.fbd.tia"
+    }
+  }
+}

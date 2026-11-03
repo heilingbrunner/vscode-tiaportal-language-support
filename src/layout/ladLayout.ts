@@ -111,7 +111,7 @@ class LadLayout {
     for (const [uid, part] of net.parts) {
       this.entries.set(uid, {
         uid,
-        node: describeNode(part, this.pins.get(uid)),
+        node: describeNode(part, this.pins.get(uid), net.fbd === true),
         order: order.get(uid) ?? seq++,
         depth: 0,
         top: 0,
@@ -237,7 +237,9 @@ class LadLayout {
     }
     this.emitWires();
     const height = this.bottom() + MARGIN_BOTTOM;
-    this.out.unshift({ t: 'line', pts: [[RAIL_X, 0], [RAIL_X, height]], cls: 'rail' });
+    if (!this.net.fbd) {
+      this.out.unshift({ t: 'line', pts: [[RAIL_X, 0], [RAIL_X, height]], cls: 'rail' });
+    }
     return { width: this.endX + 20, height, items: this.out };
   }
 
@@ -1111,7 +1113,10 @@ class LadLayout {
           continue;
         }
         if (src.kind === 'rail') {
-          this.out.push({ t: 'line', pts: [[RAIL_X, to[1]], to], cls: 'wire', net: netIndex });
+          // an FBD network has no power rail: the input pin stays open
+          if (!this.net.fbd) {
+            this.out.push({ t: 'line', pts: [[RAIL_X, to[1]], to], cls: 'wire', net: netIndex });
+          }
         } else if (from) {
           this.out.push({ t: 'line', pts: this.route(from, to, this.column(dstEntry).start), cls: 'wire', net: netIndex });
         }
@@ -1126,7 +1131,7 @@ export function layoutLad(net: FlgNet): LadScene {
     return {
       width: 48,
       height: 30,
-      items: [{ t: 'line', pts: [[RAIL_X, 0], [RAIL_X, 30]], cls: 'rail' }],
+      items: net.fbd ? [] : [{ t: 'line', pts: [[RAIL_X, 0], [RAIL_X, 30]], cls: 'rail' }],
       ...(net.labels?.length ? { labels: net.labels } : {}),
     };
   }

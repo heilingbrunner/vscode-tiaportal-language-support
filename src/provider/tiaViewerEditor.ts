@@ -318,14 +318,15 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
       return model;
     }
     try {
-      // the `.s7dcl` grammar is only loaded for blocks with LAD source text
-      const hasLadText = model.networks.some((n) => n.body.kind === 'code' && (n.body.language === 'LAD' || n.body.language === 'FBD'));
-      const [scl, awl, s7dcl] = await Promise.all([
+      // the `.s7dcl` and `.fbd` grammars are only loaded for blocks with LAD / FBD source text
+      const hasText = (language: string): boolean => model.networks.some((n) => n.body.kind === 'code' && n.body.language === language);
+      const [scl, awl, s7dcl, fbd] = await Promise.all([
         this.highlighter.get('scl'),
         this.highlighter.get('awl'),
-        hasLadText ? this.highlighter.get('s7dcl') : undefined,
+        hasText('LAD') ? this.highlighter.get('s7dcl') : undefined,
+        hasText('FBD') ? this.highlighter.get('fbd') : undefined,
       ]);
-      return withHighlighting(model, { scl, awl, s7dcl });
+      return withHighlighting(model, { scl, awl, s7dcl, fbd });
     } catch {
       return model;
     }
