@@ -3,6 +3,7 @@ import type { BlockKind, BlockModel, NetworkModel } from '../model/types';
 import { Cursor } from './dbCursor';
 import { parseAssignments } from './dbParser';
 import { parseDeclaredType, parseMembers, type RawMember, type TypeNode } from './declParser';
+import { displayLanguage, parseLanguage } from './languages';
 import { buildMember, createContext, ROOT_FLAGS, type UdtResolver } from './memberBuilder';
 import type { TextTable } from './s7res';
 import { parseSdLad } from './sdLadParser';
@@ -272,8 +273,10 @@ function readNetworks(text: string): RawNetwork[] {
   return networks;
 }
 
-function networkModel(raw: RawNetwork, index: number, headerLanguage: string, texts: TextTable | undefined): NetworkModel {
-  const language = (raw.attributes.s7_language ?? headerLanguage).toUpperCase();
+/** `safe`: the block is an F-block (`S7_Safety`), so its LAD / FBD networks are F-LAD / F-FBD. */
+function networkModel(raw: RawNetwork, index: number, headerLanguage: string, texts: TextTable | undefined, safe: boolean): NetworkModel {
+  const info = parseLanguage(raw.attributes.s7_language ?? headerLanguage, safe);
+  const language = info.base;
   const isRung = language === 'LAD' || language === 'FBD';
   const isEmpty = raw.lines.length === 0 || (isRung && EMPTY_LAD_NETWORK.test(raw.lines.join(' ').replace(/\s+/g, ' ').trim()));
   let body: NetworkModel['body'] = { kind: 'code', language, lines: raw.lines };
@@ -291,7 +294,7 @@ function networkModel(raw: RawNetwork, index: number, headerLanguage: string, te
     index,
     title: textOf(texts, raw.attributes.s7_networktitle),
     comment: textOf(texts, raw.attributes.s7_networkcomment),
-    language,
+    language: displayLanguage(info),
     body,
   };
 }
@@ -317,17 +320,18 @@ function codeBlockModel(source: string, texts: TextTable | undefined, resolve: U
   const networks = readNetworks(cur.remainder());
   const isPureScl = (attributes.s7_editormode ?? '').toUpperCase() === 'SCL';
   const headerLanguage = isPureScl ? 'SCL' : (attributes.s7_preferredlanguage ?? 'LAD');
+  const isSafe = isTrue(attributes.s7_safety);
   const codeLines = isPureScl ? networks.flatMap((n, i) => (i === 0 ? n.lines : ['', ...n.lines])) : [];
   return {
     kind,
     name,
     number: attributes.s7_blocknumber ?? '',
-    language: headerLanguage.toUpperCase(),
+    language: displayLanguage(parseLanguage(headerLanguage, isSafe)),
     memoryLayout: isTrue(attributes.s7_optimized) ? 'Optimized' : 'Standard',
     title: textOf(texts, attributes.s7_blocktitle),
     comment: textOf(texts, attributes.s7_blockcomment),
     sections: buildSections(kind, groups, returnType, resolve),
-    networks: isPureScl ? [] : networks.map((n, i) => networkModel(n, i + 1, headerLanguage, texts)),
+    networks: isPureScl ? [] : networks.map((n, i) => networkModel(n, i + 1, headerLanguage, texts, isSafe)),
     code: isPureScl ? { lines: codeLines, ...analyzeStructure(codeLines) } : undefined,
   };
 }

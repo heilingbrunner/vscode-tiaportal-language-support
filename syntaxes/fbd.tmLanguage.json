@@ -34,6 +34,7 @@
         { "include": "source.tia.s7dcl#wires" },
         { "include": "source.tia.s7dcl#global-scope" },
         { "include": "source.tia.s7dcl#hex-literals" },
+        { "include": "source.tia.s7dcl#safety-instructions" },
         { "include": "#logic-boxes" },
         { "include": "#assignments" },
         { "include": "#instruction-boxes" },

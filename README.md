@@ -10,6 +10,7 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 - **`UDT` lookup** from the workspace; views refresh when a file changes.
 - **`LAD` networks** drawn as ladder diagrams, with zoom.
 - **`FBD` networks** drawn as function block diagrams (`&`, `>=1`, `=1` boxes, `=` / `S` / `R` assignments, operands at the pins).
+- **Fail-safe `F-LAD` / `F-FBD`** (safety programs): recognised in Openness XML (`F_LAD`, `F_FBD`) and in SD format (`S7_Safety`), drawn like LAD / FBD and labelled as fail-safe.
 - **`SCL` / `STL` code** with line numbers, folding and a `REGION` outline.
 - **TIA Viewer**: read-only, TIA-style view of Openness XML and `.db`, `.udt`, `.s7dcl` (with its `.s7res`), `.scl`, `.awl`, `.stl` files.
 - **PLC tag tables** in the layout of TIA's tag table editor, with Tags and User constants tabs.
@@ -95,6 +96,7 @@ FBD has no text format of its own: TIA Portal exports FBD networks as `RUNG` sou
 - Instruction boxes (`Move`, `Convert`, `Calculate`, math, comparators, `Sel`, `Mux`, timers, counters, edge and flip-flop boxes) as instructions.
 - Box pins (`en`, `eno`, `in1`…, `out`, `q`, `et`, …) before `:=` / `=>` as parameters.
 - `Label( … )`, `RUNG` / `END_RUNG`, `wire#…` names and attribute blocks.
+- Fail-safe (F-LAD / F-FBD) instructions: the safety functions `ESTOP1`, `FDBACK`, `MUTING`, `TWO_H_EN`, `SFDOOR`, `ACK_GL`, `ACK_OP` and the F timers / counters `F_TON`, `F_TOF`, `F_TP`, `F_CTU`, `F_CTD`, `F_CTUD`. The S7DCL grammar highlights them in LAD source as well.
 
 ## TIA Viewer
 
@@ -106,6 +108,7 @@ Blocks exported as Openness XML (FB, FC, OB). The viewer shows the interface tab
 
 - **LAD** is drawn as a ladder diagram: contacts (incl. negated and edge), coils (`S`, `R`), OR branches, FB/FC calls with instance and parameters, timers, comparators, math and `Move`. Parts without a dedicated symbol are drawn as a generic box.
 - **FBD** is drawn as a function block diagram: no power rail, operands at the box inputs and outputs, logic boxes titled `&` (And), `>=1` (Or) and `=1` (Xor), coils as assignment boxes (`=`, `S`, `R`, `RET`, `JMP`), and FB/FC calls, timers, comparators, math and `Move` as boxes like in LAD.
+- **F-LAD** and **F-FBD** (fail-safe blocks, `ProgrammingLanguage` `F_LAD` / `F_FBD`) are drawn like LAD and FBD; the block header and the network heading say `F-LAD` / `F-FBD`. In SD format a block with `S7_Safety := "TRUE"` shows its LAD / FBD networks as `F-LAD` / `F-FBD`.
 - **SCL** and **STL** networks are shown as source text.
 
 Callee block numbers (`%FB1`, `%DB43`) are not part of the export and are not shown.

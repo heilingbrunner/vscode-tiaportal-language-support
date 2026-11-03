@@ -283,7 +283,8 @@ describe('real FBD export (fixtures/function-block-fbd.s7dcl)', () => {
 
   it('draws every network of the block as FBD without a power rail', () => {
     const model = parseS7dclModel(source);
-    expect(model.language).toBe('FBD');
+    // the export is a safety block (`S7_Safety`), so its FBD is F-FBD
+    expect(model.language).toBe('F-FBD');
     const kinds = model.networks.map((n) => n.body.kind);
     expect(kinds).toEqual(['lad', 'lad', 'lad', 'lad', 'lad', 'lad', 'lad', 'empty']);
     for (const network of model.networks) {

@@ -792,9 +792,11 @@ describe.skipIf(!existsSync(corpusDir))('local project corpus (s7dcl)', () => {
     for (const file of s7dclFiles(corpusDir)) {
       const model = parseS7dclModel(readFileSync(file, 'utf-8'));
       for (const n of model.networks) {
-        if (n.language === 'LAD' && n.body.kind === 'lad') {
+        // F-LAD (fail-safe blocks) is drawn like LAD
+        const isLad = n.language === 'LAD' || n.language === 'F-LAD';
+        if (isLad && n.body.kind === 'lad') {
           drawn++;
-        } else if (n.language === 'LAD' && n.body.kind === 'code') {
+        } else if (isLad && n.body.kind === 'code') {
           fallback++;
         }
       }

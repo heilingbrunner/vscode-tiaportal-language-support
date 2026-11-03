@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+- **Fail-safe languages F-LAD and F-FBD**: Openness XML networks and blocks with the programming language
+  `F_LAD` / `F_FBD`, and SD format blocks flagged `S7_Safety := "TRUE"`, are recognised as fail-safe. They are
+  drawn like LAD / FBD (ladder with power rail, function block diagram without) and the block header and the
+  network heading show `F-LAD` / `F-FBD`. SCL networks of a safety block stay SCL. The `s7dcl` and `fbd`
+  grammars highlight the fail-safe instructions (`ESTOP1`, `FDBACK`, `MUTING`, `TWO_H_EN`, `SFDOOR`, `ACK_GL`,
+  `ACK_OP`, `F_TON`, `F_TOF`, `F_TP`, `F_CTU`, `F_CTD`, `F_CTUD`).
+
 - **FBD networks drawn as function block diagrams**: networks with the programming language FBD (Openness XML
   and `.s7dcl`) no longer look like ladder logic. There is no power rail, operands sit directly at the box
   pins, `A` / `O` / `X` (`And` / `Or` / `Xor`) are boxes titled `&`, `>=1` and `=1`, and coils are assignment
