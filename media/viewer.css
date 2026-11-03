@@ -449,6 +449,44 @@ body.vscode-high-contrast .code-view {
   display: none;
 }
 
+/* STL address column: absolute addresses of the operands, in a fixed column on the right like TIA Portal */
+.code-pane.has-addr .cl .tx {
+  flex: 1 1 auto;
+  min-width: 24em;
+}
+
+.cl .addr {
+  flex: none;
+  width: 8em;
+  padding: 0 6px;
+  text-align: right;
+  color: var(--tia-muted);
+  background: color-mix(in srgb, var(--tia-head) 60%, transparent);
+  border-left: 1px solid var(--vscode-panel-border);
+  user-select: text;
+}
+
+/* multi-line block comment: collapsed to its first line like in TIA Portal */
+details.comment > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details.comment > summary::before {
+  content: '▸ ';
+  color: var(--tia-muted);
+}
+
+details.comment[open] > summary::before {
+  content: '▾ ';
+}
+
+details.comment > pre {
+  margin: 4px 0 0;
+  font-family: var(--vscode-editor-font-family);
+  white-space: pre-wrap;
+}
+
 .cl.flash {
   background: var(--tia-head);
 }

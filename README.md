@@ -10,6 +10,7 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 - **`UDT` lookup** from the workspace; views refresh when a file changes.
 - **`LAD` networks** drawn as ladder diagrams, with zoom.
 - **`FBD` networks** drawn as function block diagrams (`&`, `>=1`, `=1` boxes, `=` / `S` / `R` assignments, operands at the pins).
+- **Absolute addresses** of PLC tags (`%M1.2`) in an address column next to STL operands and below the operands of LAD / FBD networks, looked up from the PLC tag tables of the workspace, like TIA Portal.
 - **Fail-safe `F-LAD` / `F-FBD`** (safety programs): recognised in Openness XML (`F_LAD`, `F_FBD`) and in SD format (`S7_Safety`), drawn like LAD / FBD and labelled as fail-safe.
 - **`SCL` / `STL` code** with line numbers, folding and a `REGION` outline.
 - **TIA Viewer**: read-only, TIA-style view of Openness XML and `.db`, `.udt`, `.s7dcl` (with its `.s7res`), `.scl`, `.awl`, `.stl` files.
@@ -110,6 +111,8 @@ Blocks exported as Openness XML (FB, FC, OB). The viewer shows the interface tab
 - **FBD** is drawn as a function block diagram: no power rail, operands at the box inputs and outputs, logic boxes titled `&` (And), `>=1` (Or) and `=1` (Xor), coils as assignment boxes (`=`, `S`, `R`, `RET`, `JMP`), and FB/FC calls, timers, comparators, math and `Move` as boxes like in LAD.
 - **F-LAD** and **F-FBD** (fail-safe blocks, `ProgrammingLanguage` `F_LAD` / `F_FBD`) are drawn like LAD and FBD; the block header and the network heading say `F-LAD` / `F-FBD`. In SD format a block with `S7_Safety := "TRUE"` shows its LAD / FBD networks as `F-LAD` / `F-FBD`.
 - **SCL** and **STL** networks are shown as source text.
+- **Absolute addresses**: an operand that names a PLC tag (`"Motor_On"`) gets the tag's address (`%Q4.0`) from the tag table exports (`SW.Tags.PlcTagTable` XML) found in the workspace: in a fixed column to the right of STL lines (a literal such as `L 0` is repeated there, as TIA Portal does), and in small text below the operand of LAD / FBD contacts, coils and box inputs. Locals (`#x`), data block members and tags without address show none. The view refreshes when a tag table changes.
+- **Block comment**: the `////` lines in front of `BEGIN` of an `.awl` / `.stl` / `.scl` source are the block comment; it is collapsed to its first line (`//===...`) under the block title and opens on click.
 
 Callee block numbers (`%FB1`, `%DB43`) are not part of the export and are not shown.
 

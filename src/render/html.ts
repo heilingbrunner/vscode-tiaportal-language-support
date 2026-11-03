@@ -44,6 +44,16 @@ const cellDiff = (member: InterfaceMember, field: string): string =>
 /** Wraps already escaped HTML in a coloured span when it differs between the two versions. */
 const diffSpan = (mark: DiffMark | undefined, html: string): string => (mark ? `<span class="diff-${mark}">${html}</span>` : html);
 
+/** The block comment: one line is shown as it is, several lines are collapsed to the first one ("//===...") like in TIA Portal. */
+function blockComment(comment: string, mark: DiffMark | undefined): string {
+  const [first = '', ...rest] = comment.split(/\r?\n/);
+  if (rest.length === 0) {
+    return `<div class="comment">${diffSpan(mark, escapeHtml(comment))}</div>`;
+  }
+  const body = diffSpan(mark, `<summary>${escapeHtml(first)}...</summary><pre>${escapeHtml(comment)}</pre>`);
+  return `<details class="comment">${body}</details>`;
+}
+
 const check = (value: boolean, enabled: boolean, diff = ''): string =>
   `<td${classAttr('chk', diff)}><input type="checkbox" disabled${value ? ' checked' : ''}${enabled ? '' : ' class="off"'}></td>`;
 
@@ -133,7 +143,7 @@ function networkBody(network: NetworkModel): string {
     }
     case 'code':
       return renderCode(
-        { lines: body.lines, regions: [], folds: [], tokens: body.tokens, lineMarks: body.lineMarks },
+        { lines: body.lines, regions: [], folds: [], tokens: body.tokens, lineMarks: body.lineMarks, addresses: body.addresses },
         `n${network.index}-`,
       );
     case 'empty':
@@ -193,7 +203,7 @@ function titleBlock(model: BlockModel): string {
   if ((model.kind === 'DB' || model.kind === 'UDT' || model.code) && model.title === '') {
     return '';
   }
-  const comment = model.comment ? `<div class="comment">${diffSpan(model.commentDiff, escapeHtml(model.comment))}</div>` : '';
+  const comment = model.comment ? blockComment(model.comment, model.commentDiff) : '';
   const title = diffSpan(model.titleDiff, escapeHtml(model.title));
   return `<section class="block-title"><h2><span class="label">Block title:</span> ${title}</h2>${comment}</section>`;
 }

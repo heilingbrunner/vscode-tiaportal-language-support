@@ -4,6 +4,7 @@ import { parseBlock } from '../parser/blockParser';
 import { parseDataBlock } from '../parser/dbParser';
 import { parseS7dclModel } from '../parser/s7dclParser';
 import { parseAwl, parseScl } from '../parser/sclParser';
+import { withAddresses } from '../parser/stlAddresses';
 import { isTagTableSource, parseTagTable, type TagTable } from '../parser/tagTableParser';
 import { parseUdtModel } from '../parser/udtParser';
 import { diffModels } from '../diff/modelDiff';
@@ -15,6 +16,7 @@ import { renderTagTableHtml } from '../render/tagTableHtml';
 import { gitSourceFile, type ComparePairs } from './comparePairs';
 import type { HighlighterService } from './highlighterService';
 import { readS7res, s7dclUriOf, s7resUriOf } from './s7resFile';
+import type { TagIndex } from './tagIndex';
 import type { UdtIndex } from './udtIndex';
 
 export const VIEW_TYPE = 'tia.viewer';
@@ -70,6 +72,7 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
   constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly udts: UdtIndex,
+    private readonly tags: TagIndex,
     private readonly highlighter: HighlighterService,
     private readonly pairs: ComparePairs,
   ) {}
@@ -126,6 +129,10 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
     if (usesUdts(document.uri)) {
       // a changed UDT can change the expanded members of this data block
       subscriptions.push(this.udts.onDidChange(rerender));
+    }
+    if (!hasExtension(document.uri, '.db') && !hasExtension(document.uri, '.udt') && !hasExtension(document.uri, '.scl')) {
+      // a changed tag table can change the addresses shown next to the operands of the networks
+      subscriptions.push(this.tags.onDidChange(rerender));
     }
     subscriptions.push(panel.webview.onDidReceiveMessage((message: unknown) => this.relayScroll(document.uri, message)));
     const key = document.uri.toString();
@@ -294,22 +301,24 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
     if (hasExtension(uri, '.udt')) {
       return parseUdtModel(text, await this.udts.resolver());
     }
-    if (isS7dclFile(uri)) {
-      const culture = vscode.workspace.getConfiguration('tiaViewer').get<string>('culture', '');
-      const model = parseS7dclModel(text, await readS7res(uri, culture), await this.udts.resolver());
-      return this.highlight(model);
-    }
     if (hasExtension(uri, '.scl')) {
       const model = parseScl(text, await this.udts.resolver());
       return this.highlight(model);
     }
+    // the networks of the other sources show the absolute addresses of their PLC tags next to the operands
+    const addresses = await this.tags.resolver();
+    if (isS7dclFile(uri)) {
+      const culture = vscode.workspace.getConfiguration('tiaViewer').get<string>('culture', '');
+      const model = parseS7dclModel(text, await readS7res(uri, culture), await this.udts.resolver(), addresses);
+      return this.highlight(withAddresses(model, addresses));
+    }
     if (isStlFile(uri)) {
-      return this.highlight(parseAwl(text, await this.udts.resolver()));
+      return this.highlight(withAddresses(parseAwl(text, await this.udts.resolver()), addresses));
     }
     const culture = vscode.workspace.getConfiguration('tiaViewer').get<string>('culture', '');
-    const model = parseBlock(text, culture);
+    const model = parseBlock(text, culture, addresses);
     // SCL and STL networks of XML exports are highlighted too
-    return model ? this.highlight(model) : undefined;
+    return model ? this.highlight(withAddresses(model, addresses)) : undefined;
   }
 
   /** Adds syntax highlighting; any highlighter problem leaves the code as plain text instead of failing the view. */

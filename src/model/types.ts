@@ -37,7 +37,7 @@ export type NetworkBody =
   | { kind: 'lad'; scene: LadScene }
   | { kind: 'text'; language: string; lines: string[]; lineMarks?: LineMarks }
   /** SCL or STL source of a network, shown as a numbered code pane (highlighted when `tokens` is set). */
-  | { kind: 'code'; language: string; lines: string[]; tokens?: CodeToken[][]; lineMarks?: LineMarks };
+  | { kind: 'code'; language: string; lines: string[]; tokens?: CodeToken[][]; lineMarks?: LineMarks; addresses?: string[] };
 
 export interface NetworkModel {
   index: number;
@@ -77,6 +77,8 @@ export interface CodeInfo {
   folds: Fold[];
   tokens?: CodeToken[][];
   lineMarks?: LineMarks;
+  /** STL networks: the text of the address column per line (absolute address or literal), empty for none. */
+  addresses?: string[];
 }
 
 export interface DataBlockInfo {

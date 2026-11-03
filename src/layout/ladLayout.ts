@@ -1,4 +1,5 @@
 import type { FlgNet } from '../parser/flgNetParser';
+import type { AddressResolver } from '../parser/tagAddresses';
 import { describeNode, ROW, SYM_LINE, TITLE_H, HEAD_LINE, type LNode, type PinDesc } from './nodes';
 import { buildPinTable, type PinTable } from './pins';
 import type { LadScene, Pt, SceneItem } from './scene';
@@ -104,14 +105,17 @@ class LadLayout {
   private pinGrow = new Map<string, number>();
   private endX = 0;
 
-  constructor(private readonly net: FlgNet) {
+  constructor(
+    private readonly net: FlgNet,
+    addresses?: AddressResolver,
+  ) {
     this.pins = buildPinTable(net);
     const order = firstWireIndex(net);
     let seq = net.wires.length;
     for (const [uid, part] of net.parts) {
       this.entries.set(uid, {
         uid,
-        node: describeNode(part, this.pins.get(uid), net.fbd === true),
+        node: describeNode(part, this.pins.get(uid), net.fbd === true, addresses),
         order: order.get(uid) ?? seq++,
         depth: 0,
         top: 0,
@@ -1001,6 +1005,11 @@ class LadLayout {
     node.headLines.forEach((line, i) => {
       this.out.push({ t: 'text', x: cx, y: entry.top + 11 + i * HEAD_LINE, s: line, cls: 'operand', anchor: 'middle' });
     });
+    if (node.addrLine) {
+      // the absolute address of the tag, small, right below its name
+      const y = entry.top + 11 + node.headLines.length * HEAD_LINE;
+      this.out.push({ t: 'text', x: cx, y, s: node.addrLine, cls: 'hint', anchor: 'middle' });
+    }
   }
 
   private emitBox(entry: Entry, col: Column): void {
@@ -1082,6 +1091,16 @@ class LadLayout {
         cls: 'operand',
         anchor: isLeft ? 'end' : 'start',
       });
+      if (pin.addr) {
+        this.out.push({
+          t: 'text',
+          x: x + dir * (STUB + 4),
+          y: y + 15,
+          s: pin.addr,
+          cls: 'hint',
+          anchor: isLeft ? 'end' : 'start',
+        });
+      }
     } else if (!isLeft && pin.name === 'eno' && this.hasNoFlowDst(entry.uid, pin.name)) {
       this.wire([col.right, y], [this.endX, y]);
       this.out.push({ t: 'line', pts: [[this.endX, y - TICK], [this.endX, y + TICK]], cls: 'tick' });
@@ -1125,8 +1144,8 @@ class LadLayout {
   }
 }
 
-/** Lays out the FlgNet of one LAD network as drawing instructions. */
-export function layoutLad(net: FlgNet): LadScene {
+/** Lays out the FlgNet of one LAD / FBD network as drawing instructions; `addresses` adds the tags' absolute addresses. */
+export function layoutLad(net: FlgNet, addresses?: AddressResolver): LadScene {
   if (net.parts.size === 0) {
     return {
       width: 48,
@@ -1135,7 +1154,7 @@ export function layoutLad(net: FlgNet): LadScene {
       ...(net.labels?.length ? { labels: net.labels } : {}),
     };
   }
-  const scene = new LadLayout(net).run();
+  const scene = new LadLayout(net, addresses).run();
   if (net.labels?.length) {
     scene.labels = net.labels;
   }

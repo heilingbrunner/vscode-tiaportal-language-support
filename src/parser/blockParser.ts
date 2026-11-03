@@ -3,17 +3,18 @@ import type { BlockKind, BlockModel, NetworkBody, NetworkModel } from '../model/
 import { parseFlgNet } from './flgNetParser';
 import { parseInterface } from './interfaceParser';
 import { displayLanguage, parseLanguage } from './languages';
+import type { AddressResolver } from './tagAddresses';
 import { renderStatementList, renderStructuredText } from './textNetwork';
 import { attributeOf, child, childrenNamed, parseXml, pickText, type XNode } from './xml';
 
 const BLOCK_NODE = /^SW\.Blocks\.(FB|FC|OB)$/;
 
-function parseBody(source: XNode | undefined, language: string): NetworkBody {
+function parseBody(source: XNode | undefined, language: string, addresses?: AddressResolver): NetworkBody {
   switch (source?.name) {
     case 'FlgNet': {
       const parsed = parseFlgNet(source);
       const net = language === 'FBD' ? { ...parsed, fbd: true } : parsed;
-      return net.parts.size === 0 ? { kind: 'empty' } : { kind: 'lad', scene: layoutLad(net) };
+      return net.parts.size === 0 ? { kind: 'empty' } : { kind: 'lad', scene: layoutLad(net, addresses) };
     }
     case 'StatementList':
       return { kind: 'code', language: 'STL', lines: renderStatementList(source) };
@@ -24,7 +25,7 @@ function parseBody(source: XNode | undefined, language: string): NetworkBody {
   }
 }
 
-function parseNetwork(unit: XNode, index: number, culture: string): NetworkModel {
+function parseNetwork(unit: XNode, index: number, culture: string, addresses?: AddressResolver): NetworkModel {
   const objectList = child(unit, 'ObjectList');
   const source = child(child(child(unit, 'AttributeList'), 'NetworkSource'), 'FlgNet')
     ?? child(child(unit, 'AttributeList'), 'NetworkSource')?.children[0];
@@ -32,7 +33,7 @@ function parseNetwork(unit: XNode, index: number, culture: string): NetworkModel
   const language = parseLanguage(attributeOf(unit, 'ProgrammingLanguage') ?? '');
   let body: NetworkBody;
   try {
-    body = parseBody(source, language.base);
+    body = parseBody(source, language.base, addresses);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unknown error';
     body = { kind: 'text', language: 'error', lines: [`Network could not be rendered: ${message}`] };
@@ -48,9 +49,10 @@ function parseNetwork(unit: XNode, index: number, culture: string): NetworkModel
 
 /**
  * Parses a TIA Openness block export (FB/FC/OB) into a view model.
- * Returns `undefined` when the XML is not such a block; throws on malformed XML.
+ * Returns `undefined` when the XML is not such a block; throws on malformed XML. `addresses` adds the absolute
+ * addresses of the PLC tags next to the operands of the LAD / FBD networks.
  */
-export function parseBlock(source: string, culture: string): BlockModel | undefined {
+export function parseBlock(source: string, culture: string, addresses?: AddressResolver): BlockModel | undefined {
   const root = parseXml(source);
   const block = root.children.find((c) => BLOCK_NODE.test(c.name));
   if (!block) {
@@ -67,7 +69,7 @@ export function parseBlock(source: string, culture: string): BlockModel | undefi
     comment: pickText(objectList, 'Comment', culture),
     sections: parseInterface(block, culture),
     networks: childrenNamed(objectList, 'SW.Blocks.CompileUnit').map((unit, i) =>
-      parseNetwork(unit, i + 1, culture),
+      parseNetwork(unit, i + 1, culture, addresses),
     ),
   };
 }

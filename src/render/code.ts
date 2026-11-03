@@ -47,8 +47,11 @@ export function renderCode(code: CodeInfo, idPrefix = ''): string {
     const lineAttr = idPrefix === '' ? ` data-line="${line}"` : '';
     const mark = code.lineMarks?.[i];
     const cls = mark ? `cl diff-${mark}` : 'cl';
-    return `<div class="${cls}" id="${idPrefix}L${line}"${lineAttr}><span class="ln">${line}</span>${toggle}<span class="tx">${lineHtml(text, code.tokens?.[i])}</span></div>`;
+    // the address column of an STL network (absolute addresses of the operands, like TIA Portal)
+    const address = code.addresses ? `<span class="addr">${escapeHtml(code.addresses[i] ?? '')}</span>` : '';
+    return `<div class="${cls}" id="${idPrefix}L${line}"${lineAttr}><span class="ln">${line}</span>${toggle}<span class="tx">${lineHtml(text, code.tokens?.[i])}</span>${address}</div>`;
   });
   const outline = outlineHtml(code);
-  return `<section class="code-view${outline ? '' : ' no-outline'}">${outline}<div class="code-pane">${rows.join('')}</div></section>`;
+  const paneClass = code.addresses ? 'code-pane has-addr' : 'code-pane';
+  return `<section class="code-view${outline ? '' : ' no-outline'}">${outline}<div class="${paneClass}">${rows.join('')}</div></section>`;
 }

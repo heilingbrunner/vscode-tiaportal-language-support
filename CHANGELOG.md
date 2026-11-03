@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+- **Absolute addresses like TIA Portal**: operands that name a PLC tag show the tag's address (`%M1.2`,
+  `%MW10`), taken from the PLC tag table exports in the workspace. STL networks get an address column on the
+  right (literals such as `L 0` are repeated there); in LAD / FBD networks the address stands in small text
+  below the operand of contacts and coils and below the operand at a box input. Locals, data block members
+  and tags without address show none; the view refreshes when a tag table changes.
+- **Block comment of STL / SCL sources**: the `////` lines in front of `BEGIN` are shown under the block title,
+  collapsed to their first line like in TIA Portal.
+
 - **Fail-safe languages F-LAD and F-FBD**: Openness XML networks and blocks with the programming language
   `F_LAD` / `F_FBD`, and SD format blocks flagged `S7_Safety := "TRUE"`, are recognised as fail-safe. They are
   drawn like LAD / FBD (ladder with power rail, function block diagram without) and the block header and the

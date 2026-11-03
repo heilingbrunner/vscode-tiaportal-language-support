@@ -1,4 +1,5 @@
 import type { FlgPart } from '../parser/flgNetParser';
+import type { AddressResolver } from '../parser/tagAddresses';
 import type { PinState } from './pins';
 
 export const ROW = 24;
@@ -23,6 +24,8 @@ export interface PinDesc {
   row: number;
   negated: boolean;
   access: string;
+  /** Absolute address of the tag wired into this input pin (shown small below the operand), or empty. */
+  addr: string;
 }
 
 export interface LNode {
@@ -33,6 +36,8 @@ export interface LNode {
   /** Total height including labels above the symbol. */
   h: number;
   headLines: string[];
+  /** Contacts/coils: absolute address of the operand, drawn small below its label; empty when unknown. */
+  addrLine: string;
   /** Boxes: height of the label block above the box. Contacts/coils: extra label height above the symbol line. */
   headH: number;
   /** Boxes only: label lines below the box, and the height they take. */
@@ -153,7 +158,7 @@ function pinLabel(name: string): string {
   return name === name.toLowerCase() ? name.toUpperCase() : name;
 }
 
-const plainPin = (name: string, row = 0): PinDesc => ({ name, label: '', row, negated: false, access: '' });
+const plainPin = (name: string, row = 0): PinDesc => ({ name, label: '', row, negated: false, access: '', addr: '' });
 
 function coilMark(name: string, negated: boolean): string {
   if (!negated) {
@@ -162,17 +167,19 @@ function coilMark(name: string, negated: boolean): string {
   return name === 'JCoil' ? 'JMPN' : '/';
 }
 
-function symbolNode(part: FlgPart, kind: 'contact' | 'coil', pins: PinMap): LNode {
+function symbolNode(part: FlgPart, kind: 'contact' | 'coil', pins: PinMap, addresses?: AddressResolver): LNode {
   const operand = pins.get('operand')?.accessIn ?? '';
   const negated = part.negated.has('operand');
   const lines = wrapOperand(operand);
-  const extraH = Math.max(0, lines.length - 1) * HEAD_LINE;
+  const addrLine = addresses?.(operand) ?? '';
+  const extraH = Math.max(0, lines.length + (addrLine ? 1 : 0) - 1) * HEAD_LINE;
   return {
     part,
     kind,
-    w: Math.max(SYM_W, ...lines.map((l) => textWidth(l) + 10)),
+    w: Math.max(SYM_W, ...lines.map((l) => textWidth(l) + 10), addrLine ? textWidth(addrLine) + 10 : 0),
     h: SYM_H + extraH,
     headLines: lines,
+    addrLine,
     headH: extraH,
     footLines: [],
     footH: 0,
@@ -200,6 +207,7 @@ function orNode(part: FlgPart, pins: PinMap): LNode {
     w: OR_W,
     h: 0,
     headLines: [],
+    addrLine: '',
     headH: 0,
     footLines: [],
     footH: 0,
@@ -289,7 +297,7 @@ function boxTitle(part: FlgPart, def: BoxDef | undefined): string {
   return def.title;
 }
 
-function boxNode(part: FlgPart, pins: PinMap): LNode {
+function boxNode(part: FlgPart, pins: PinMap, addresses?: AddressResolver): LNode {
   const def = part.isCall || !Object.hasOwn(BOX_DEFS, part.name) ? undefined : BOX_DEFS[part.name];
   const names = part.isCall ? callPins(part, pins) : partPins(part, def, pins);
   const operandTexts = [...pins.values()]
@@ -312,6 +320,7 @@ function boxNode(part: FlgPart, pins: PinMap): LNode {
         row,
         negated: part.negated.has(name),
         access: isLeft ? (state?.accessIn ?? '') : (state?.accessOut.join(', ') ?? ''),
+        addr: isLeft ? (addresses?.(state?.accessIn ?? '') ?? '') : '',
       };
     });
   const left = describe(names.left, true);
@@ -333,6 +342,7 @@ function boxNode(part: FlgPart, pins: PinMap): LNode {
     ),
     h: headH + TITLE_H + rows * ROW + 4 + footH + (names.hidden ? HIDDEN_PARAMS_H : 0),
     headLines,
+    addrLine: '',
     headH,
     footLines,
     footH,
@@ -350,14 +360,14 @@ function boxNode(part: FlgPart, pins: PinMap): LNode {
 }
 
 /** `fbd`: the network is FBD, so coils and the OR join are boxes instead of ladder symbols. */
-export function describeNode(part: FlgPart, pins: PinMap | undefined, fbd = false): LNode {
+export function describeNode(part: FlgPart, pins: PinMap | undefined, fbd = false, addresses?: AddressResolver): LNode {
   const pinMap: PinMap = pins ?? new Map();
   if (!part.isCall && !fbd) {
     if (Object.hasOwn(CONTACT_EDGES, part.name)) {
-      return symbolNode(part, 'contact', pinMap);
+      return symbolNode(part, 'contact', pinMap, addresses);
     }
     if (Object.hasOwn(COIL_MARKS, part.name)) {
-      return symbolNode(part, 'coil', pinMap);
+      return symbolNode(part, 'coil', pinMap, addresses);
     }
     if (part.name === 'O') {
       return orNode(part, pinMap);
@@ -365,7 +375,7 @@ export function describeNode(part: FlgPart, pins: PinMap | undefined, fbd = fals
   } else if (!part.isCall && part.name === 'Contact') {
     // a plain contact in an FBD network (not produced by TIA Portal itself) is still drawn as one;
     // the edge contacts become P / N boxes
-    return symbolNode(part, 'contact', pinMap);
+    return symbolNode(part, 'contact', pinMap, addresses);
   }
-  return boxNode(part, pinMap);
+  return boxNode(part, pinMap, addresses);
 }

@@ -72,6 +72,25 @@ function readHeaderLine(cur: Cursor, word: string, header: Header): void {
   }
 }
 
+const BEGIN_LINE = /^\s*BEGIN\b/i;
+/** TIA Portal writes the block comment in front of `BEGIN`, every line behind a `//` of its own: `////text`. */
+const BLOCK_COMMENT_LINE = /^\s*\/\/(\/\/.*)$/;
+
+/** The block comment of a source: the `////` lines before `BEGIN`, without the exported `//` prefix. */
+function headerComment(source: string): string {
+  const lines: string[] = [];
+  for (const line of source.split(/\r?\n/)) {
+    if (BEGIN_LINE.test(line)) {
+      break;
+    }
+    const text = BLOCK_COMMENT_LINE.exec(line)?.[1];
+    if (text !== undefined) {
+      lines.push(text.trimEnd());
+    }
+  }
+  return lines.join('\n');
+}
+
 /** The code between `BEGIN` and the closing `END_*` keyword, one entry per line, without the BEGIN line. */
 function extractCode(remainder: string): string[] {
   const [, ...rest] = remainder.split(/\r?\n/);
@@ -160,7 +179,7 @@ function parseSource(source: string, resolve: UdtResolver, language: 'SCL' | 'ST
     language,
     memoryLayout: header.optimizedAccess ? 'Optimized' : 'Standard',
     title: header.title,
-    comment: '',
+    comment: headerComment(source),
     sections: buildSections(kind, groups, returnType, resolve),
     networks: language === 'STL' ? splitNetworks(code) : [],
     code: language === 'SCL' ? { lines: code, ...analyzeStructure(code) } : undefined,

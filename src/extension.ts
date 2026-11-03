@@ -2,17 +2,20 @@ import * as vscode from 'vscode';
 import { ComparePairs } from './provider/comparePairs';
 import { HighlighterService } from './provider/highlighterService';
 import { SearchPanel } from './provider/searchPanel';
+import { TagIndex } from './provider/tagIndex';
 import { TiaViewerEditorProvider, VIEW_TYPE } from './provider/tiaViewerEditor';
 import { UdtIndex } from './provider/udtIndex';
 
 export function activate(context: vscode.ExtensionContext): void {
   const udts = new UdtIndex();
+  const tags = new TagIndex();
   const highlighter = new HighlighterService(context.extensionUri);
   const pairs = new ComparePairs();
   const search = new SearchPanel(context.extensionUri);
-  const viewer = new TiaViewerEditorProvider(context.extensionUri, udts, highlighter, pairs);
+  const viewer = new TiaViewerEditorProvider(context.extensionUri, udts, tags, highlighter, pairs);
   context.subscriptions.push(
     udts,
+    tags,
     highlighter,
     pairs,
     search,

@@ -4,6 +4,7 @@ import { Cursor } from './dbCursor';
 import { parseAssignments } from './dbParser';
 import { parseDeclaredType, parseMembers, type RawMember, type TypeNode } from './declParser';
 import { displayLanguage, parseLanguage } from './languages';
+import type { AddressResolver } from './tagAddresses';
 import { buildMember, createContext, ROOT_FLAGS, type UdtResolver } from './memberBuilder';
 import type { TextTable } from './s7res';
 import { parseSdLad } from './sdLadParser';
@@ -274,7 +275,14 @@ function readNetworks(text: string): RawNetwork[] {
 }
 
 /** `safe`: the block is an F-block (`S7_Safety`), so its LAD / FBD networks are F-LAD / F-FBD. */
-function networkModel(raw: RawNetwork, index: number, headerLanguage: string, texts: TextTable | undefined, safe: boolean): NetworkModel {
+function networkModel(
+  raw: RawNetwork,
+  index: number,
+  headerLanguage: string,
+  texts: TextTable | undefined,
+  safe: boolean,
+  addresses?: AddressResolver,
+): NetworkModel {
   const info = parseLanguage(raw.attributes.s7_language ?? headerLanguage, safe);
   const language = info.base;
   const isRung = language === 'LAD' || language === 'FBD';
@@ -285,7 +293,7 @@ function networkModel(raw: RawNetwork, index: number, headerLanguage: string, te
   } else if (isRung) {
     // drawn as a ladder or function block diagram (both use the same rung syntax); what the parser does not understand stays source text (highlighted by the grammar)
     try {
-      body = { kind: 'lad', scene: layoutLad(parseSdLad(raw.lines, language === 'FBD')) };
+      body = { kind: 'lad', scene: layoutLad(parseSdLad(raw.lines, language === 'FBD'), addresses) };
     } catch {
       body = { kind: 'code', language, lines: raw.lines };
     }
@@ -304,7 +312,13 @@ function networkModel(raw: RawNetwork, index: number, headerLanguage: string, te
  * `S7_EditorMode := "SCL"` marks a pure SCL block, shown like an `.scl` file (code pane with outline); in a block
  * with `S7_PreferredLanguage` each network follows its own `S7_Language`.
  */
-function codeBlockModel(source: string, texts: TextTable | undefined, resolve: UdtResolver, keyword: string): BlockModel {
+function codeBlockModel(
+  source: string,
+  texts: TextTable | undefined,
+  resolve: UdtResolver,
+  keyword: string,
+  addresses?: AddressResolver,
+): BlockModel {
   const cur = new Cursor(source);
   const attributes = readAttributes(cur);
   cur.word();
@@ -331,7 +345,7 @@ function codeBlockModel(source: string, texts: TextTable | undefined, resolve: U
     title: textOf(texts, attributes.s7_blocktitle),
     comment: textOf(texts, attributes.s7_blockcomment),
     sections: buildSections(kind, groups, returnType, resolve),
-    networks: isPureScl ? [] : networks.map((n, i) => networkModel(n, i + 1, headerLanguage, texts, isSafe)),
+    networks: isPureScl ? [] : networks.map((n, i) => networkModel(n, i + 1, headerLanguage, texts, isSafe, addresses)),
     code: isPureScl ? { lines: codeLines, ...analyzeStructure(codeLines) } : undefined,
   };
 }
@@ -340,8 +354,13 @@ function codeBlockModel(source: string, texts: TextTable | undefined, resolve: U
  * Parses a `.s7dcl` source into the same view model as the classic `.udt` / `.db` / `.scl` sources. `texts` holds
  * the multilingual texts of the sibling `.s7res`, when there is one.
  */
-export function parseS7dclModel(source: string, texts?: TextTable, resolve: UdtResolver = () => undefined): BlockModel {
-  const model = buildModel(source, texts, resolve);
+export function parseS7dclModel(
+  source: string,
+  texts?: TextTable,
+  resolve: UdtResolver = () => undefined,
+  addresses?: AddressResolver,
+): BlockModel {
+  const model = buildModel(source, texts, resolve, addresses);
   return texts ? { ...model, texts: textsInfo(source, texts) } : model;
 }
 
@@ -356,7 +375,7 @@ function textsInfo(source: string, texts: TextTable): NonNullable<BlockModel['te
   };
 }
 
-function buildModel(source: string, texts: TextTable | undefined, resolve: UdtResolver): BlockModel {
+function buildModel(source: string, texts: TextTable | undefined, resolve: UdtResolver, addresses?: AddressResolver): BlockModel {
   const keyword = s7dclBlockKeyword(source);
   switch (keyword) {
     case 'TYPE':
@@ -366,7 +385,7 @@ function buildModel(source: string, texts: TextTable | undefined, resolve: UdtRe
     case 'FUNCTION_BLOCK':
     case 'FUNCTION':
     case 'ORGANIZATION_BLOCK':
-      return codeBlockModel(source, texts, resolve, keyword);
+      return codeBlockModel(source, texts, resolve, keyword, addresses);
     default:
       return new Cursor(source).fail('TYPE, DATA_BLOCK, FUNCTION_BLOCK, FUNCTION or ORGANIZATION_BLOCK expected');
   }
