@@ -20,6 +20,29 @@ body {
   background: var(--vscode-editor-background);
 }
 
+/* block page: two independent scrollers, the header sections (block head, interface) above the code content */
+body.split {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 0;
+  overflow: hidden;
+}
+
+.top-pane {
+  flex: 0 1 auto;
+  max-height: 40vh;
+  overflow: auto;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.main-pane {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: 32px;
+}
+
 .message {
   padding: 16px;
   color: var(--tia-muted);
@@ -321,6 +344,15 @@ tr.hidden {
 .network h2 {
   cursor: pointer;
   margin-top: 12px;
+}
+
+/* the triangle glyph sits low in the editor font: centre it on the height of the lower-case letters */
+.network h2 .caret {
+  line-height: 1;
+  text-align: center;
+  vertical-align: middle;
+  position: relative;
+  top: -0.1em;
 }
 
 .network h2 .lang {

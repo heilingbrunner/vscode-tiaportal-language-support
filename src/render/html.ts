@@ -277,14 +277,18 @@ export function renderBlockHtml(model: BlockModel, assets: HtmlAssets): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="${assets.styleUri}">
 <title>${escapeHtml(model.name)}</title></head>
-<body>
+<body class="split">
+<div class="top-pane">
 <header class="block-head"><h1>${escapeHtml(model.name)} <span class="kind">[${escapeHtml(model.kind)}${escapeHtml(model.number)}]</span></h1>
 <div class="props">${headerProps(model)}${zoom}</div>${networkActions}</header>
 ${interfaceBlock(model)}
+</div>
+<div class="main-pane">
 ${titleBlock(model)}
 ${model.code ? renderCode(model.code) : ''}
 ${model.networks.map(networkSection).join('\n')}
 ${textsBlock(model.texts)}
+</div>
 <script nonce="${assets.nonce}" src="${assets.scriptUri}"></script>
 </body></html>`;
 }

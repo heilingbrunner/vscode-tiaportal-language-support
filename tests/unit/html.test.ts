@@ -23,4 +23,15 @@ describe('interface table', () => {
     expect(rows[1]![1]).toContain('empty');
     expect(rows[2]![1]).toContain('empty');
   });
+
+  it('puts the header sections and the content into two panes that scroll on their own', () => {
+    const top = html.indexOf('<div class="top-pane">');
+    const main = html.indexOf('<div class="main-pane">');
+    expect(html).toContain('<body class="split">');
+    expect(top).toBeGreaterThan(-1);
+    expect(main).toBeGreaterThan(top);
+    expect(html.indexOf('<header class="block-head">')).toBeGreaterThan(top);
+    expect(html.indexOf('<table class="interface"')).toBeLessThan(main);
+    expect(html.indexOf('<section class="network')).toBeGreaterThan(main);
+  });
 });

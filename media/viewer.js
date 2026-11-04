@@ -187,13 +187,40 @@
   }
 
   // Keeps the two viewers of a version comparison scrolled alike: the extension relays these messages to the
-  // other viewer. `target` is '' for the page and the id of a network for its horizontally scrolling diagram.
+  // other viewer. `target` is '' for the content pane (the window on pages without panes), 'top' for the header
+  // pane and the id of a network for its horizontally scrolling diagram.
   var vscodeApi = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : undefined;
   var applied = {};
 
+  /** The element that scrolls the content of the page (null: the window itself). */
+  function contentScroller() {
+    return document.querySelector('.main-pane');
+  }
+
   function scroller(target) {
-    var section = target === '' ? null : document.getElementById(target);
+    if (target === '') {
+      return contentScroller();
+    }
+    if (target === 'top') {
+      return document.querySelector('.top-pane');
+    }
+    var section = document.getElementById(target);
     return section ? section.querySelector('.scroll') : null;
+  }
+
+  /** The scroll target an element (or the document) of a scroll event stands for; null for other scrollers. */
+  function targetOf(node) {
+    if (node === document) {
+      return '';
+    }
+    if (node.classList && node.classList.contains('main-pane')) {
+      return '';
+    }
+    if (node.classList && node.classList.contains('top-pane')) {
+      return 'top';
+    }
+    var section = node.closest && node.closest('section.network');
+    return section ? section.id : null;
   }
 
   function positionOf(target) {
@@ -205,9 +232,7 @@
     window.addEventListener(
       'scroll',
       function (event) {
-        var node = event.target;
-        var section = node === document ? null : node.closest && node.closest('section.network');
-        var target = node === document ? '' : section ? section.id : null;
+        var target = targetOf(event.target);
         if (target === null) {
           return;
         }
@@ -229,14 +254,26 @@
   var DIFF_MARGIN = 80;
   var DIFF_JOIN_GAP = 4;
 
+  /** The vertical scroll position of the content, and the offset that turns viewport coordinates into content ones. */
+  function contentTop() {
+    var pane = contentScroller();
+    return pane ? pane.scrollTop : window.scrollY;
+  }
+
+  function contentOffset() {
+    var pane = contentScroller();
+    return pane ? pane.scrollTop - pane.getBoundingClientRect().top : window.scrollY;
+  }
+
   function differenceTargets() {
     var rects = [];
+    var offset = contentOffset();
     Array.prototype.forEach.call(document.querySelectorAll(MARKED), function (el) {
       if (el.getClientRects().length === 0) {
         return; // hidden, for example inside a collapsed row
       }
       var rect = el.getBoundingClientRect();
-      rects.push({ top: rect.top + window.scrollY, bottom: rect.bottom + window.scrollY });
+      rects.push({ top: rect.top + offset, bottom: rect.bottom + offset });
     });
     rects.sort(function (a, b) {
       return a.top - b.top;
@@ -258,7 +295,7 @@
     if (targets.length === 0) {
       return;
     }
-    var y = window.scrollY;
+    var y = contentTop();
     var found;
     if (direction === 'next') {
       found = targets.filter(function (t) { return t > y + 2; })[0];
@@ -267,7 +304,12 @@
       var before = targets.filter(function (t) { return t < y - 2; });
       found = before.length > 0 ? before[before.length - 1] : targets[targets.length - 1];
     }
-    window.scrollTo(window.scrollX, found);
+    var pane = contentScroller();
+    if (pane) {
+      pane.scrollTo(pane.scrollLeft, found);
+    } else {
+      window.scrollTo(window.scrollX, found);
+    }
   }
 
   window.addEventListener('message', function (event) {
