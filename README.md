@@ -249,4 +249,12 @@ npm run tokenize -- --dir <samples> --ext <scl|awl|db|udt> [--strict] [--top 25]
 
 ### FBD – Function Block Diagram
 
-- [Creating FBD Programs](https://docs.tia.siemens.cloud/r/en-us/v21/creating-fbd-programs)  
+- [Creating FBD Programs](https://docs.tia.siemens.cloud/r/en-us/v21/creating-fbd-programs)
+
+### F-DB – Fail-safe Data Block
+
+- [Differences between the F-FBD and F-LAD programming languages and the standard FBD and LAD programming languages](https://support.industry.siemens.com/cs/mdm/22099875?c=8666404107&lc=en-US)
+
+### Technology Objects
+
+- [Exporting Technology Objects](https://docs.tia.siemens.cloud/r/en-us/v21/technology-objects/exporting-technology-objects)
