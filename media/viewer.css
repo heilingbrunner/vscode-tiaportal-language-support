@@ -28,7 +28,8 @@ body {
 .block-head {
   position: sticky;
   top: 0;
-  z-index: 2;
+  left: 0;
+  z-index: 3;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -374,8 +375,10 @@ pre.code {
   --c-instruction: #0000ff;
   --c-label: #795e26;
   --c-absolute: #001080;
-  display: grid;
-  grid-template-columns: minmax(10rem, 18rem) minmax(0, 1fr);
+  /* as wide as the longest line: the window is the only horizontal scroller, so its scrollbar spans the whole document */
+  display: flex;
+  width: max-content;
+  min-width: 100%;
   margin-top: 12px;
   border-top: 1px solid var(--vscode-panel-border);
 }
@@ -396,11 +399,15 @@ body.vscode-high-contrast .code-view {
   --c-absolute: #9cdcfe;
 }
 
-.code-view.no-outline {
-  grid-template-columns: minmax(0, 1fr);
-}
-
+/* stays in view while the page is scrolled sideways; above the sticky line numbers of the code pane */
 .outline {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  flex: none;
+  align-self: flex-start;
+  width: clamp(10rem, 40vw, 18rem);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   padding: 6px 0;
@@ -431,7 +438,7 @@ body.vscode-high-contrast .code-view {
 .outline-item[data-depth='6'] { padding-left: 108px; }
 
 .code-pane {
-  overflow-x: auto;
+  flex: 1 0 auto;
   padding: 4px 0;
   font-family: var(--vscode-editor-font-family);
   font-size: var(--vscode-editor-font-size);
