@@ -318,6 +318,11 @@
       jumpToDifference(message.direction === 'previous' ? 'previous' : 'next');
       return;
     }
+    if (message && message.type === 'split') {
+      // the other viewer of the comparison moved the divider: follow without sending it back
+      setSplit(typeof message.ratio === 'number' ? message.ratio : null, false);
+      return;
+    }
     if (!message || message.type !== 'scroll' || typeof message.target !== 'string') {
       return;
     }
@@ -331,6 +336,97 @@
     // read back: the position may have been clamped because this version is shorter or narrower
     applied[message.target] = positionOf(message.target);
   });
+
+  // The divider between the header pane and the content pane. The header height is kept as a share of the window
+  // height (null: its natural height), remembered with the webview state and mirrored to the other viewer of a
+  // comparison.
+  var splitter = document.querySelector('.splitter');
+  var topPane = document.querySelector('.top-pane');
+  var splitRatio = null;
+  var MIN_TOP = 48;
+  var MIN_MAIN = 96;
+  var KEY_STEP = 16;
+
+  function splitBounds() {
+    var splitterHeight = splitter ? splitter.offsetHeight : 0;
+    return { min: MIN_TOP, max: Math.max(MIN_TOP, window.innerHeight - MIN_MAIN - splitterHeight) };
+  }
+
+  function showSplit() {
+    if (!splitter || !topPane) {
+      return;
+    }
+    if (splitRatio === null) {
+      document.body.classList.remove('sized');
+      document.body.style.removeProperty('--top-height');
+      return;
+    }
+    var bounds = splitBounds();
+    var height = Math.min(bounds.max, Math.max(bounds.min, Math.round(splitRatio * window.innerHeight)));
+    document.body.style.setProperty('--top-height', height + 'px');
+    document.body.classList.add('sized');
+  }
+
+  function setSplit(ratio, notify) {
+    splitRatio = ratio === null ? null : Math.min(1, Math.max(0, ratio));
+    showSplit();
+    if (vscodeApi) {
+      var state = vscodeApi.getState() || {};
+      vscodeApi.setState(Object.assign({}, state, { split: splitRatio }));
+      if (notify) {
+        vscodeApi.postMessage({ type: 'split', ratio: splitRatio });
+      }
+    }
+  }
+
+  function setSplitHeight(height, notify) {
+    setSplit(height / window.innerHeight, notify);
+  }
+
+  if (splitter && topPane) {
+    var saved = vscodeApi && vscodeApi.getState();
+    if (saved && typeof saved.split === 'number') {
+      splitRatio = saved.split;
+      showSplit();
+    }
+    window.addEventListener('resize', showSplit);
+
+    splitter.addEventListener('pointerdown', function (event) {
+      splitter.setPointerCapture(event.pointerId);
+      splitter.classList.add('dragging');
+      event.preventDefault();
+    });
+    splitter.addEventListener('pointermove', function (event) {
+      if (splitter.classList.contains('dragging')) {
+        var bounds = splitBounds();
+        setSplitHeight(Math.min(bounds.max, Math.max(bounds.min, event.clientY)), true);
+      }
+    });
+    function endDrag(event) {
+      splitter.classList.remove('dragging');
+      if (splitter.hasPointerCapture(event.pointerId)) {
+        splitter.releasePointerCapture(event.pointerId);
+      }
+    }
+    splitter.addEventListener('pointerup', endDrag);
+    splitter.addEventListener('pointercancel', endDrag);
+    splitter.addEventListener('dblclick', function () {
+      setSplit(null, true);
+    });
+    splitter.addEventListener('keydown', function (event) {
+      var height = topPane.offsetHeight;
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        var bounds = splitBounds();
+        var next = height + (event.key === 'ArrowUp' ? -KEY_STEP : KEY_STEP);
+        setSplitHeight(Math.min(bounds.max, Math.max(bounds.min, next)), true);
+      } else if (event.key === 'Home') {
+        setSplit(null, true);
+      } else {
+        return;
+      }
+      event.preventDefault();
+    });
+  }
 
   renumberRows();
 })();

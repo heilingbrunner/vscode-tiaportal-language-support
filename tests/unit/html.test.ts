@@ -34,4 +34,11 @@ describe('interface table', () => {
     expect(html.indexOf('<table class="interface"')).toBeLessThan(main);
     expect(html.indexOf('<section class="network')).toBeGreaterThan(main);
   });
+
+  it('has a keyboard-reachable divider between the two panes', () => {
+    const splitter = html.indexOf('<div class="splitter" role="separator"');
+    expect(splitter).toBeGreaterThan(html.indexOf('<div class="top-pane">'));
+    expect(splitter).toBeLessThan(html.indexOf('<div class="main-pane">'));
+    expect(html).toContain('tabindex="0"');
+  });
 });

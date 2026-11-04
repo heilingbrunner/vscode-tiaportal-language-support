@@ -33,7 +33,36 @@ body.split {
   flex: 0 1 auto;
   max-height: 40vh;
   overflow: auto;
-  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+/* once the divider was dragged the header pane has a fixed height (set by viewer.js) */
+body.split.sized .top-pane {
+  flex: none;
+  height: var(--top-height);
+  max-height: none;
+}
+
+.splitter {
+  position: relative;
+  flex: none;
+  height: 4px;
+  background: var(--vscode-panel-border);
+  cursor: row-resize;
+  touch-action: none;
+}
+
+/* a taller hit area than the visible line */
+.splitter::before {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+
+.splitter:hover,
+.splitter:focus-visible,
+.splitter.dragging {
+  background: var(--vscode-sash-hoverBorder, var(--tia-accent));
+  outline: none;
 }
 
 .main-pane {

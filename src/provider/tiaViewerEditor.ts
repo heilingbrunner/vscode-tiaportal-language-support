@@ -213,12 +213,18 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
     if (!peer || typeof message !== 'object' || message === null) {
       return;
     }
-    const { type, target, left, top } = message as Record<string, unknown>;
-    if (type !== 'scroll' || typeof target !== 'string' || typeof left !== 'number' || typeof top !== 'number') {
+    const { type, target, left, top, ratio } = message as Record<string, unknown>;
+    let forwarded: Record<string, unknown>;
+    if (type === 'scroll' && typeof target === 'string' && typeof left === 'number' && typeof top === 'number') {
+      forwarded = { type, target, left, top };
+    } else if (type === 'split' && (ratio === null || (typeof ratio === 'number' && ratio >= 0 && ratio <= 1))) {
+      // the share of the height the header pane takes (null: its natural height), so both viewers keep the proportion
+      forwarded = { type, ratio };
+    } else {
       return;
     }
     for (const other of this.openPanels.get(peer.other.toString()) ?? []) {
-      void other.webview.postMessage({ type, target, left, top });
+      void other.webview.postMessage(forwarded);
     }
   }
 

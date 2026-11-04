@@ -283,6 +283,7 @@ export function renderBlockHtml(model: BlockModel, assets: HtmlAssets): string {
 <div class="props">${headerProps(model)}${zoom}</div>${networkActions}</header>
 ${interfaceBlock(model)}
 </div>
+<div class="splitter" role="separator" aria-orientation="horizontal" tabindex="0" title="Drag to resize, double-click to reset" aria-label="Resize the header and the content"></div>
 <div class="main-pane">
 ${titleBlock(model)}
 ${model.code ? renderCode(model.code) : ''}
