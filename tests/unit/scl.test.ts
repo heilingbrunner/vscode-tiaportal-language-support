@@ -207,6 +207,9 @@ describe('SCL highlighting and rendering', () => {
   it('renders outline, fold toggles, highlighted code and no empty title band', () => {
     const html = renderBlockHtml(withHighlighting(fb, { scl: highlighter }), assets);
     expect(html).toContain('class="code-view"');
+    // the outline is a panel of its own to the left of the content pane (like TIA Portal), not part of the code view
+    expect(html.indexOf('<nav class="outline outline-side"')).toBeGreaterThan(html.indexOf('<div class="work">'));
+    expect(html.indexOf('<nav class="outline outline-side"')).toBeLessThan(html.indexOf('<div class="main-pane">'));
     expect(html).toContain('data-line="12" data-depth="1"');
     expect(html).toContain('data-from="1" data-to="9"');
     expect(html).toContain('<span class="c-keyword">IF</span>');

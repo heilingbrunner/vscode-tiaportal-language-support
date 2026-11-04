@@ -1,6 +1,6 @@
 import type { DiffMark } from '../model/diff';
 import type { BlockModel, InterfaceMember, InterfaceSection, NetworkModel, TextsInfo } from '../model/types';
-import { renderCode } from './code';
+import { renderCode, renderCodeParts } from './code';
 import { escapeHtml, sceneToSvg } from './svg';
 
 export interface HtmlAssets {
@@ -271,6 +271,8 @@ export function renderBlockHtml(model: BlockModel, assets: HtmlAssets): string {
   // a UDT table lists its members without section rows; elsewhere the sections of the interface fold too
   const hasFoldableSections = model.kind !== 'UDT' && model.sections.some((s) => s.members.length > 0);
   const networkActions = model.networks.length > 1 || hasFoldableSections ? networkToggle() : '';
+  // the region outline of the code gets a panel of its own on the left (like TIA Portal), with its own vertical scrollbar
+  const code = model.code ? renderCodeParts(model.code) : undefined;
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${csp}">
@@ -284,11 +286,14 @@ export function renderBlockHtml(model: BlockModel, assets: HtmlAssets): string {
 ${interfaceBlock(model)}
 </div>
 <div class="splitter" role="separator" aria-orientation="horizontal" tabindex="0" title="Drag to resize, double-click to reset" aria-label="Resize the header and the content"></div>
+<div class="work">
+${code?.outline ?? ''}
 <div class="main-pane">
 ${titleBlock(model)}
-${model.code ? renderCode(model.code) : ''}
+${code?.view ?? ''}
 ${model.networks.map(networkSection).join('\n')}
 ${textsBlock(model.texts)}
+</div>
 </div>
 <script nonce="${assets.nonce}" src="${assets.scriptUri}"></script>
 </body></html>`;

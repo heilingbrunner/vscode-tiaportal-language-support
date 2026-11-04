@@ -249,6 +249,9 @@
     if (target === 'top') {
       return document.querySelector('.top-pane');
     }
+    if (target === 'outline') {
+      return document.querySelector('.outline-side');
+    }
     var section = document.getElementById(target);
     return section ? section.querySelector('.scroll') : null;
   }
@@ -263,6 +266,9 @@
     }
     if (node.classList && node.classList.contains('top-pane')) {
       return 'top';
+    }
+    if (node.classList && node.classList.contains('outline-side')) {
+      return 'outline';
     }
     var section = node.closest && node.closest('section.network');
     return section ? section.id : null;

@@ -65,8 +65,16 @@ body.split.sized .top-pane {
   outline: none;
 }
 
+/* below the divider: the content pane and, for code with regions, the outline panel on its right */
+.work {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
 .main-pane {
   flex: 1 1 0;
+  min-width: 0;
   min-height: 0;
   overflow: auto;
   padding-bottom: 32px;
@@ -484,6 +492,15 @@ body.vscode-high-contrast .code-view {
   cursor: pointer;
   white-space: nowrap;
   color: var(--vscode-editor-foreground);
+}
+
+/* the outline as a panel of its own on the left of the content, like in TIA Portal: full height, its own vertical scrollbar */
+.outline.outline-side {
+  position: static;
+  align-self: stretch;
+  flex: none;
+  width: clamp(10rem, 22vw, 18rem);
+  overflow: auto;
 }
 
 .outline-item:hover,

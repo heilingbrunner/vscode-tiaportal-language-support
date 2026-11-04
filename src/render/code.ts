@@ -12,7 +12,7 @@ function lineHtml(text: string, tokens: CodeToken[] | undefined): string {
     .join('');
 }
 
-function outlineHtml(code: CodeInfo): string {
+function outlineHtml(code: CodeInfo, side: boolean): string {
   if (code.regions.length === 0) {
     return '';
   }
@@ -22,7 +22,15 @@ function outlineHtml(code: CodeInfo): string {
         `<button class="outline-item" data-line="${r.line}" data-depth="${Math.min(r.depth, MAX_OUTLINE_DEPTH)}">${escapeHtml(r.name || 'REGION')}</button>`,
     )
     .join('');
-  return `<nav class="outline" aria-label="Regions">${items}</nav>`;
+  return `<nav class="${side ? 'outline outline-side' : 'outline'}" aria-label="Regions">${items}</nav>`;
+}
+
+/** The code view and its REGION outline as separate pieces, for a page that gives the outline a panel of its own. */
+export interface CodeParts {
+  /** The outline navigation (empty when the code has no regions). */
+  outline: string;
+  /** The line-numbered code view, without the outline. */
+  view: string;
 }
 
 /**
@@ -30,6 +38,12 @@ function outlineHtml(code: CodeInfo): string {
  * `idPrefix` keeps line ids unique when a page holds several panes (one per network).
  */
 export function renderCode(code: CodeInfo, idPrefix = ''): string {
+  const { outline, view } = renderCodeParts(code, idPrefix, false);
+  return outline ? view.replace('<div class="code-pane', `${outline}<div class="code-pane`) : view;
+}
+
+/** Like `renderCode`, but returns the outline apart from the code view (marked as a side panel when `side`). */
+export function renderCodeParts(code: CodeInfo, idPrefix = '', side = true): CodeParts {
   const foldAt = new Map<number, Fold>();
   for (const fold of code.folds) {
     // folds are sorted by start line, outermost first: keep the outermost one per line
@@ -51,7 +65,8 @@ export function renderCode(code: CodeInfo, idPrefix = ''): string {
     const address = code.addresses ? `<span class="addr">${escapeHtml(code.addresses[i] ?? '')}</span>` : '';
     return `<div class="${cls}" id="${idPrefix}L${line}"${lineAttr}><span class="ln">${line}</span>${toggle}<span class="tx">${lineHtml(text, code.tokens?.[i])}</span>${address}</div>`;
   });
-  const outline = outlineHtml(code);
+  const outline = outlineHtml(code, side);
   const paneClass = code.addresses ? 'code-pane has-addr' : 'code-pane';
-  return `<section class="code-view${outline ? '' : ' no-outline'}">${outline}<div class="${paneClass}">${rows.join('')}</div></section>`;
+  const view = `<section class="code-view${outline ? '' : ' no-outline'}"><div class="${paneClass}">${rows.join('')}</div></section>`;
+  return { outline, view };
 }
