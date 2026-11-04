@@ -86,8 +86,9 @@
     }
     var fold = target.closest('.fold[data-from]');
     if (fold) {
-      fold.classList.toggle('collapsed');
+      var foldCollapsed = fold.classList.toggle('collapsed');
       applyFolds();
+      notifyFold('line', fold.dataset.from, foldCollapsed);
       return;
     }
     var outlineItem = target.closest('.outline-item');
@@ -101,20 +102,64 @@
       setRowsHidden(caret.closest('table'), caret.dataset.toggle, collapsed);
       renumberRows();
       syncToggleAll();
+      notifyFold('member', caret.dataset.toggle, collapsed);
       return;
     }
     var toggle = target.closest('button[data-toggle-all]');
     if (toggle) {
-      setAllCollapsed(toggle.dataset.action === 'collapse');
+      var allCollapsed = toggle.dataset.action === 'collapse';
+      setAllCollapsed(allCollapsed);
+      notifyFold('all', '', allCollapsed);
       return;
     }
     var heading = target.closest('h2[data-toggle-network]');
     if (heading) {
-      heading.parentElement.classList.toggle('collapsed');
-      heading.querySelector('.caret').classList.toggle('collapsed');
+      var networkCollapsed = heading.parentElement.classList.toggle('collapsed');
+      heading.querySelector('.caret').classList.toggle('collapsed', networkCollapsed);
       syncToggleAll();
+      notifyFold('network', heading.parentElement.id, networkCollapsed);
     }
   });
+
+  // The folding of a version comparison is mirrored: a fold or unfold in one viewer is sent to the other one
+  // (through the extension), which applies the same state to the same member, network or code region.
+  // `kind` is 'member' (interface row id), 'network' (section id), 'line' (first line of a code region) or 'all'.
+  function notifyFold(kind, id, collapsed) {
+    if (vscodeApi) {
+      vscodeApi.postMessage({ type: 'fold', kind: kind, id: id, collapsed: collapsed });
+    }
+  }
+
+  function applyFold(kind, id, collapsed) {
+    var escaped = window.CSS && CSS.escape ? CSS.escape(id) : id;
+    if (kind === 'all') {
+      setAllCollapsed(collapsed);
+    } else if (kind === 'member') {
+      var caret = document.querySelector('.caret[data-toggle="' + escaped + '"]');
+      if (caret) {
+        caret.classList.toggle('collapsed', collapsed);
+        setRowsHidden(caret.closest('table'), caret.dataset.toggle, collapsed);
+        renumberRows();
+        syncToggleAll();
+      }
+    } else if (kind === 'network') {
+      var section = document.getElementById(id);
+      if (section && section.classList.contains('network')) {
+        section.classList.toggle('collapsed', collapsed);
+        var networkCaret = section.querySelector('h2 .caret');
+        if (networkCaret) {
+          networkCaret.classList.toggle('collapsed', collapsed);
+        }
+        syncToggleAll();
+      }
+    } else if (kind === 'line') {
+      var fold = document.querySelector('.fold[data-from="' + escaped + '"]');
+      if (fold) {
+        fold.classList.toggle('collapsed', collapsed);
+        applyFolds();
+      }
+    }
+  }
 
   // the carets of the interface sections (Input, Output, ...); sections without members have nothing to fold
   function sectionCarets() {
@@ -316,6 +361,12 @@
     var message = event.data;
     if (message && message.type === 'difference') {
       jumpToDifference(message.direction === 'previous' ? 'previous' : 'next');
+      return;
+    }
+    if (message && message.type === 'fold') {
+      if (typeof message.kind === 'string' && typeof message.id === 'string' && typeof message.collapsed === 'boolean') {
+        applyFold(message.kind, message.id, message.collapsed);
+      }
       return;
     }
     if (message && message.type === 'split') {

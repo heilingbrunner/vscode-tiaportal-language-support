@@ -36,6 +36,9 @@ const usesUdts = (uri: vscode.Uri): boolean =>
   isStlFile(uri);
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
+/** What a fold message of a viewer refers to: an interface member, a network, a code region, or everything. */
+const FOLD_KINDS: ReadonlySet<string> = new Set(['member', 'network', 'line', 'all']);
+
 class BlockDocument implements vscode.CustomDocument {
   constructor(readonly uri: vscode.Uri) {}
 
@@ -213,9 +216,12 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
     if (!peer || typeof message !== 'object' || message === null) {
       return;
     }
-    const { type, target, left, top, ratio } = message as Record<string, unknown>;
+    const { type, target, left, top, ratio, kind, id, collapsed } = message as Record<string, unknown>;
     let forwarded: Record<string, unknown>;
-    if (type === 'scroll' && typeof target === 'string' && typeof left === 'number' && typeof top === 'number') {
+    if (type === 'fold' && FOLD_KINDS.has(String(kind)) && typeof id === 'string' && typeof collapsed === 'boolean') {
+      // a member, network or code region was folded or unfolded: the other viewer shows the same state
+      forwarded = { type, kind, id, collapsed };
+    } else if (type === 'scroll' && typeof target === 'string' && typeof left === 'number' && typeof top === 'number') {
       forwarded = { type, target, left, top };
     } else if (type === 'split' && (ratio === null || (typeof ratio === 'number' && ratio >= 0 && ratio <= 1))) {
       // the share of the height the header pane takes (null: its natural height), so both viewers keep the proportion
