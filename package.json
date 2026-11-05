@@ -12,7 +12,7 @@
     "displayName": "TIA Portal Language Support",
     "description": "Syntax highlighting for exported Siemens TIA Portal files",
     "icon": "assets/vscode-tiaportal-syntaxes-logo.png",
-    "version": "0.0.11",
+    "version": "0.0.12",
     "engines": {
         "vscode": "^1.140.0"
     },

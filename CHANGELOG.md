@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased]
+## [0.0.12]
 
 - **AutomationML (`.aml`) hardware exports in the TIA Viewer**: the AutomationML file that TIA Portal exports for
   the hardware configuration opens as tables: **Devices** (type, order number, position, firmware, comment),
