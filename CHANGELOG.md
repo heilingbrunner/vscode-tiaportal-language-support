@@ -1,5 +1,13 @@
 # Change Log
 
+## [Unreleased]
+
+- **AutomationML (`.aml`) hardware exports in the TIA Viewer**: the AutomationML file that TIA Portal exports for
+  the hardware configuration opens as tables: **Devices** (type, order number, position, firmware, comment),
+  **Network** (subnets and nodes with address, subnet mask and PROFINET name), **Links** (the two elements each
+  link connects), **I/O tags** and a list of **All elements**. The header shows the tool, version and date that
+  wrote the file. Comments follow `tiaViewer.culture`. Comparing two `.aml` files is not supported yet.
+
 ## [0.0.11]
 
 - **Fail-safe data blocks (F-DB)**: an SD format `DATA_BLOCK` flagged `S7_Safety := "TRUE"` (and the Openness

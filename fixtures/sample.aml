@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CAEXFile FileName="Sample.aml" SchemaVersion="2.15">
+  <AdditionalInformation>
+    <WriterHeader>
+      <WriterName>Totally Integrated Automation Portal</WriterName>
+      <WriterVendor>Siemens</WriterVendor>
+      <WriterVersion>2100</WriterVersion>
+      <WriterRelease>2100.0.121.1</WriterRelease>
+      <LastWritingDateTime>2026-11-05T15:30:50Z</LastWritingDateTime>
+    </WriterHeader>
+  </AdditionalInformation>
+  <InstanceHierarchy Name="Sample Instance Hierarchy">
+    <InternalElement ID="p-1" Name="Project">
+      <InternalElement ID="s-1" Name="PN">
+        <Attribute Name="Type" AttributeDataType="xs:string"><Value>Ethernet</Value></Attribute>
+        <SupportedRoleClass RefRoleClassPath="AutomationProjectConfigurationRoleClassLib/Subnet" />
+      </InternalElement>
+      <InternalElement ID="h-1" Name="Hardware">
+        <InternalElement ID="d-1" Name="PLC_1">
+          <Attribute Name="TypeIdentifier" AttributeDataType="xs:string"><Value>OrderNumber:6ES7 511-1AK02-0AB0</Value></Attribute>
+          <Attribute Name="PositionNumber" AttributeDataType="xs:int"><Value>0</Value></Attribute>
+          <Attribute Name="BuiltIn" AttributeDataType="xs:boolean"><Value>false</Value></Attribute>
+          <Attribute Name="Comment" AttributeDataType="xs:string">
+            <Value>Main controller</Value>
+            <Attribute Name="aml-lang=en-US" AttributeDataType="xs:string"><Value>Main controller</Value></Attribute>
+            <Attribute Name="aml-lang=de-DE" AttributeDataType="xs:string"><Value>Hauptsteuerung</Value></Attribute>
+          </Attribute>
+          <InternalElement ID="e-1" Name="PROFINET interface">
+            <InternalElement ID="n-1" Name="IE1">
+              <Attribute Name="NetworkAddress" AttributeDataType="xs:string"><Value>192.168.0.1</Value></Attribute>
+              <Attribute Name="SubnetMask" AttributeDataType="xs:string"><Value>255.255.255.0</Value></Attribute>
+              <SupportedRoleClass RefRoleClassPath="AutomationProjectConfigurationRoleClassLib/Node" />
+            </InternalElement>
+            <InternalElement ID="port-1" Name="Port_1">
+              <ExternalInterface ID="pi-1" Name="CommunicationPortInterface" RefBaseClassPath="CommunicationInterfaceClassLib/CommunicationPortInterface" />
+              <SupportedRoleClass RefRoleClassPath="AutomationProjectConfigurationRoleClassLib/CommunicationPort" />
+            </InternalElement>
+            <SupportedRoleClass RefRoleClassPath="AutomationProjectConfigurationRoleClassLib/CommunicationInterface" />
+          </InternalElement>
+          <SupportedRoleClass RefRoleClassPath="AutomationProjectConfigurationRoleClassLib/DeviceItem" />
+        </InternalElement>
+        <InternalElement ID="d-2" Name="Drive_1">
+          <InternalElement ID="port-2" Name="Port_1">
+            <ExternalInterface ID="pi-2" Name="CommunicationPortInterface" RefBaseClassPath="CommunicationInterfaceClassLib/CommunicationPortInterface" />
+            <SupportedRoleClass RefRoleClassPath="AutomationProjectConfigurationRoleClassLib/CommunicationPort" />
+          </InternalElement>
+          <SupportedRoleClass RefRoleClassPath="AutomationProjectConfigurationRoleClassLib/Device" />
+        </InternalElement>
+        <InternalLink Name="Link To Port_1" RefPartnerSideA="pi-1:CommunicationPortInterface" RefPartnerSideB="pi-2:CommunicationPortInterface" />
+        <InternalLink Name="Dangling" RefPartnerSideA="pi-1:CommunicationPortInterface" RefPartnerSideB="missing:CommunicationPortInterface" />
+      </InternalElement>
+      <InternalLink Name="Link To Subnet_1" RefPartnerSideA="N-1:LogicalEndPoint_Node" RefPartnerSideB="s-1:LogicalEndPoint_Subnet" />
+      <InternalElement ID="t-1" Name="Default tag table">
+        <ExternalInterface ID="tag-1" Name="A2548.0" RefBaseClassPath="AutomationProjectConfigurationInterfaceClassLib/Tag">
+          <Attribute Name="DataType" AttributeDataType="xs:string"><Value>Bool</Value></Attribute>
+          <Attribute Name="IoType" AttributeDataType="xs:string"><Value>Output</Value></Attribute>
+          <Attribute Name="LogicalAddress" AttributeDataType="xs:string"><Value>2848.0</Value></Attribute>
+        </ExternalInterface>
+        <SupportedRoleClass RefRoleClassPath="AutomationProjectConfigurationRoleClassLib/TagTable" />
+      </InternalElement>
+    </InternalElement>
+  </InstanceHierarchy>
+</CAEXFile>

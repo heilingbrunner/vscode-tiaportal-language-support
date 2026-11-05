@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import * as vscode from 'vscode';
+import { parseAml, type AmlModel } from '../parser/amlParser';
 import { parseBlock } from '../parser/blockParser';
 import { parseDataBlock } from '../parser/dbParser';
 import { parseS7dclModel } from '../parser/s7dclParser';
@@ -10,6 +11,7 @@ import { parseUdtModel } from '../parser/udtParser';
 import { diffModels } from '../diff/modelDiff';
 import { diffTagTables } from '../diff/tagTableDiff';
 import type { BlockModel } from '../model/types';
+import { renderAmlHtml } from '../render/amlHtml';
 import { renderBlockHtml, renderMessageHtml, type HtmlAssets } from '../render/html';
 import { withHighlighting } from '../render/sclHighlighter';
 import { renderTagTableHtml } from '../render/tagTableHtml';
@@ -23,6 +25,8 @@ export const VIEW_TYPE = 'tia.viewer';
 
 const hasExtension = (uri: vscode.Uri, extension: string): boolean => uri.path.toLowerCase().endsWith(extension);
 const isStlFile = (uri: vscode.Uri): boolean => hasExtension(uri, '.awl') || hasExtension(uri, '.stl');
+/** An AutomationML (CAEX) hardware export: shown as tables, independent of UDTs and PLC tags. */
+const isAmlFile = (uri: vscode.Uri): boolean => hasExtension(uri, '.aml');
 const isS7dclFile = (uri: vscode.Uri): boolean => hasExtension(uri, '.s7dcl');
 /** An `.s7res` is shown as the `.s7dcl` it belongs to. */
 const isS7resFile = (uri: vscode.Uri): boolean => hasExtension(uri, '.s7res');
@@ -64,8 +68,8 @@ function watchFile(uri: vscode.Uri, onChange: () => void): vscode.Disposable[] {
   return [watcher, watcher.onDidChange(onChange), watcher.onDidCreate(onChange)];
 }
 
-/** What a file turned out to be: a block, data block or type, a PLC tag table, or something the viewer cannot show. */
-type ModelResult = { model: BlockModel } | { tagTable: TagTable } | { message: string };
+/** What a file turned out to be: a block, data block or type, a PLC tag table, an AutomationML export, or something the viewer cannot show. */
+type ModelResult = { model: BlockModel } | { tagTable: TagTable } | { aml: AmlModel } | { message: string };
 
 /** Read-only custom editor that shows a TIA Openness block export as a TIA-style view. */
 export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvider<BlockDocument> {
@@ -133,7 +137,7 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
       // a changed UDT can change the expanded members of this data block
       subscriptions.push(this.udts.onDidChange(rerender));
     }
-    if (!hasExtension(document.uri, '.db') && !hasExtension(document.uri, '.udt') && !hasExtension(document.uri, '.scl')) {
+    if (!hasExtension(document.uri, '.db') && !hasExtension(document.uri, '.udt') && !hasExtension(document.uri, '.scl') && !isAmlFile(document.uri)) {
       // a changed tag table can change the addresses shown next to the operands of the networks
       subscriptions.push(this.tags.onDidChange(rerender));
     }
@@ -245,6 +249,10 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
     if ('message' in result) {
       return renderMessageHtml(result.message, assets);
     }
+    if ('aml' in result) {
+      // comparing two hardware exports is not supported yet: both sides show their own file without marks
+      return renderAmlHtml(result.aml, assets);
+    }
     const peer = this.pairs.get(uri);
     if ('tagTable' in result) {
       // an unreadable or different-kind counterpart only costs the marks: this table is still shown
@@ -278,6 +286,11 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
         return { message: 'This file is too large for the TIA viewer (limit: 50 MB).' };
       }
       const text = new TextDecoder('utf-8').decode(bytes);
+      if (isAmlFile(uri)) {
+        const culture = vscode.workspace.getConfiguration('tiaViewer').get<string>('culture', '');
+        const aml = parseAml(text, culture);
+        return aml ? { aml } : { message: 'This file is not an AutomationML (CAEX) export.' };
+      }
       if (hasExtension(uri, '.xml') && isTagTableSource(text)) {
         const culture = vscode.workspace.getConfiguration('tiaViewer').get<string>('culture', '');
         const tagTable = parseTagTable(text, culture);
@@ -291,7 +304,9 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
       }
       return { model };
     } catch (error: unknown) {
-      const what = hasExtension(uri, '.db')
+      const what = isAmlFile(uri)
+        ? 'AutomationML'
+        : hasExtension(uri, '.db')
         ? 'TIA data block source'
         : hasExtension(uri, '.udt')
           ? 'TIA UDT source'

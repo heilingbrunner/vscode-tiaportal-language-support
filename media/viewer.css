@@ -105,8 +105,15 @@ body.split.sized .top-pane {
 }
 
 .kind,
-.props {
+.props,
+.aml-meta {
   color: var(--tia-muted);
+}
+
+/* the writer line of an AutomationML export, under the title */
+.aml-meta {
+  margin: 2px 0 0;
+  font-size: 12px;
 }
 
 .props {

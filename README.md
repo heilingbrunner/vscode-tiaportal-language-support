@@ -20,6 +20,7 @@ Syntax highlighting for exported Siemens TIA Portal (Step 7) files.
 - **`SCL` / `STL` code** with line numbers, folding and a `REGION` outline.
 - **TIA Viewer**: read-only, TIA-style view of Openness XML and `.db`, `.udt`, `.s7dcl` (with its `.s7res`), `.scl`, `.awl`, `.stl` files.
 - **PLC tag tables** in the layout of TIA's tag table editor, with Tags and User constants tabs.
+- **AutomationML hardware exports** (`.aml`) as tables of devices, network nodes, links and I/O tags.
 - **Interface table** with expandable structs, arrays and UDT members.
 - **Collapsible networks** (click a network heading, or use the collapse/expand all button in the header, which also folds the interface sections) and a culture setting for titles and comments.
 - **git diff**: both versions side by side, red/green marks, synchronized scrolling.
@@ -132,6 +133,18 @@ The same view opens TIA data block sources (*Reopen Editor With… > TIA Viewer*
 ### User-defined types (`*.udt`)
 
 *Reopen Editor With… > TIA Viewer* on a `.udt` file shows the table of TIA's type editor: name, data type, default value (type defaults greyed), accessible/writable/visible/setpoint flags, supervision and comment, without sections and without a retain column. Structs, arrays and referenced UDTs can be expanded; referenced types are looked up in the `*.udt` files of the workspace, and the view refreshes when one of them changes.
+
+### AutomationML hardware exports (`*.aml`)
+
+The hardware export of TIA Portal (AutomationML / CAEX) is shown as tables. Open the `.aml` with *Reopen Editor With… > TIA Viewer*:
+
+- **Devices**: every device and device item with its type name, order number, position number, firmware version and comment.
+- **Network**: subnets, IO systems and nodes with type, address, subnet mask and PROFINET device name.
+- **Links**: each link between two ports or between a node and a subnet, as the two elements it connects (a link to an id the file does not contain shows the raw reference).
+- **I/O tags**: the PLC tags of the tag tables with data type, I/O type, address and length.
+- **All elements**: the whole hierarchy, indented by depth, so elements with other roles stay visible.
+
+The header names the tool, version and date that wrote the file. Comments use the language of `tiaViewer.culture` when the file has it. Comparing two `.aml` files is not supported yet.
 
 ### SD format sources (`*.s7dcl` + `*.s7res`)
 
