@@ -6,7 +6,12 @@
   the hardware configuration opens as tables: **Devices** (type, order number, position, firmware, comment),
   **Network** (subnets and nodes with address, subnet mask and PROFINET name), **Links** (the two elements each
   link connects), **I/O tags** and a list of **All elements**. The header shows the tool, version and date that
-  wrote the file. Comments follow `tiaViewer.culture`. Comparing two `.aml` files is not supported yet.
+  wrote the file. Comments follow `tiaViewer.culture`.
+- **Comparing `.aml` files**: in a comparison (for example *Open Changes*) the new version shows green and the old
+  version red rows and cells. Elements are matched by id, tags by table and name, links by their two ends. Tabs
+  with a difference show a coloured dot, the Next / Previous Difference buttons continue into the next tab that
+  has one, and both viewers show the same tab. A changed value without a column marks the name cell and names the
+  change in its tooltip.
 
 ## [0.0.11]
 

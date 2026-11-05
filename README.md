@@ -144,7 +144,9 @@ The hardware export of TIA Portal (AutomationML / CAEX) is shown as tables. Open
 - **I/O tags**: the PLC tags of the tag tables with data type, I/O type, address and length.
 - **All elements**: the whole hierarchy, indented by depth, so elements with other roles stay visible.
 
-The header names the tool, version and date that wrote the file. Comments use the language of `tiaViewer.culture` when the file has it. Comparing two `.aml` files is not supported yet.
+The header names the tool, version and date that wrote the file. Comments use the language of `tiaViewer.culture` when the file has it.
+
+In a comparison (for example *Open Changes* in the Source Control view) both versions are marked like the other views: green rows and cells in the new version, red in the old one. Elements are matched by their id, tags by table and name, links by the two elements they connect. A tab that holds a difference shows a coloured dot, and the *Next / Previous Difference* buttons continue into the next tab that has one. A changed value that no column shows (for example `BuiltIn`) marks the name cell and lists the change in its tooltip.
 
 ### SD format sources (`*.s7dcl` + `*.s7res`)
 

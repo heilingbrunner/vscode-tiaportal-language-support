@@ -75,17 +75,24 @@ describe('parseAml', () => {
 
   it('collects the PLC tags of a tag table element', () => {
     expect(model.tags).toEqual([
-      { table: 'Default tag table', name: 'A2548.0', dataType: 'Bool', ioType: 'Output', address: '2848.0', length: '', comment: '' },
+      { table: 'Default tag table', tableId: 't-1', name: 'A2548.0', dataType: 'Bool', ioType: 'Output', address: '2848.0', length: '', comment: '' },
     ]);
   });
 
   it('resolves links through the ids of the interfaces to the elements that own them', () => {
-    expect(model.links[0]).toEqual({ name: 'Link To Port_1', from: 'Project / Hardware / PLC_1 / PROFINET interface / Port_1', to: 'Project / Hardware / Drive_1 / Port_1' });
+    expect(model.links[0]).toEqual({
+      name: 'Link To Port_1',
+      from: 'Project / Hardware / PLC_1 / PROFINET interface / Port_1',
+      to: 'Project / Hardware / Drive_1 / Port_1',
+      // the ends as element ids, which survive a rename of an element on the way
+      fromId: 'port-1',
+      toId: 'port-2',
+    });
   });
 
   it('resolves a link that names an element id directly, ignoring the case of the id', () => {
     // TIA writes the id of the node / subnet element (here `N-1` for `n-1`) rather than that of one of its interfaces
-    expect(model.links[2]).toEqual({ name: 'Link To Subnet_1', from: 'Project / Hardware / PLC_1 / PROFINET interface / IE1', to: 'Project / PN' });
+    expect(model.links[2]).toEqual({ name: 'Link To Subnet_1', from: 'Project / Hardware / PLC_1 / PROFINET interface / IE1', to: 'Project / PN', fromId: 'n-1', toId: 's-1' });
   });
 
   it('keeps a link whose partner is unknown, showing the raw reference', () => {

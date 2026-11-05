@@ -137,12 +137,12 @@
             "editor/title": [
                 {
                     "command": "tia.previousDifference",
-                    "when": "tia.inCompare && (resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl || resourceExtname == .s7dcl || resourceExtname == .s7res)",
+                    "when": "tia.inCompare && (resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl || resourceExtname == .s7dcl || resourceExtname == .s7res || resourceExtname == .aml)",
                     "group": "navigation@1"
                 },
                 {
                     "command": "tia.nextDifference",
-                    "when": "tia.inCompare && (resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl || resourceExtname == .s7dcl || resourceExtname == .s7res)",
+                    "when": "tia.inCompare && (resourceExtname == .xml || resourceExtname == .db || resourceExtname == .udt || resourceExtname == .scl || resourceExtname == .awl || resourceExtname == .stl || resourceExtname == .s7dcl || resourceExtname == .s7res || resourceExtname == .aml)",
                     "group": "navigation@2"
                 },
                 {

@@ -1,4 +1,5 @@
 import { XMLValidator } from 'fast-xml-parser';
+import type { RowDiff } from './tagTableParser';
 import { child, childrenNamed, childText, parseXml, type XNode } from './xml';
 
 /** Metadata of the tool that wrote the file (`AdditionalInformation/WriterHeader`) and the CAEX schema version. */
@@ -15,6 +16,8 @@ export interface AmlHeader {
 export interface AmlElement {
   id: string;
   name: string;
+  /** Set by a version comparison; the fields are `name`, `roles`, `path` and `@<attribute name>`. */
+  diff?: RowDiff;
   /** Names of the ancestors joined by ` / `; empty for a root element. */
   path: string;
   depth: number;
@@ -28,7 +31,10 @@ export interface AmlElement {
 /** A PLC tag: an `ExternalInterface` whose base class is the TIA `Tag` interface. */
 export interface AmlTag {
   table: string;
+  /** Lower-cased id of the tag table element: it identifies the table when its name changes. */
+  tableId: string;
   name: string;
+  diff?: RowDiff;
   dataType: string;
   ioType: string;
   address: string;
@@ -39,8 +45,12 @@ export interface AmlTag {
 /** A connection between two interfaces, shown as the elements that own them. */
 export interface AmlLink {
   name: string;
+  diff?: RowDiff;
   from: string;
   to: string;
+  /** Lower-cased id of the element at each end (the raw reference when the file does not contain it). */
+  fromId: string;
+  toId: string;
 }
 
 export interface AmlModel {
@@ -109,15 +119,16 @@ interface Walk {
   culture: string;
   elements: AmlElement[];
   tags: AmlTag[];
-  /** Lower-cased id of an element or of one of its `ExternalInterface`s -> full path of that element. */
-  idOwners: Map<string, string>;
+  /** Lower-cased id of an element or of one of its `ExternalInterface`s -> that element. */
+  idOwners: Map<string, { id: string; path: string }>;
   links: { name: string; from: string; to: string }[];
 }
 
-function readTag(table: string, node: XNode, culture: string): AmlTag {
+function readTag(table: string, tableId: string, node: XNode, culture: string): AmlTag {
   const attributes = readAttributes(node, culture);
   return {
     table,
+    tableId: tableId.toLowerCase(),
     name: node.attrs.Name ?? '',
     dataType: attributes.DataType ?? '',
     ioType: attributes.IoType ?? '',
@@ -140,11 +151,11 @@ function walkElement(node: XNode, path: string, depth: number, parentId: string 
     roles: childrenNamed(node, 'SupportedRoleClass').map((r) => lastSegment(r.attrs.RefRoleClassPath)),
     attributes: readAttributes(node, walk.culture),
   });
-  rememberId(walk, id, fullPath);
+  rememberId(walk, id, { id, path: fullPath });
   for (const itf of childrenNamed(node, 'ExternalInterface')) {
-    rememberId(walk, itf.attrs.ID, fullPath);
+    rememberId(walk, itf.attrs.ID, { id, path: fullPath });
     if (itf.attrs.RefBaseClassPath === TAG_INTERFACE) {
-      walk.tags.push(readTag(name, itf, walk.culture));
+      walk.tags.push(readTag(name, id, itf, walk.culture));
     }
   }
   for (const inner of childrenNamed(node, 'InternalElement')) {
@@ -156,17 +167,20 @@ function walkElement(node: XNode, path: string, depth: number, parentId: string 
   }
 }
 
-function rememberId(walk: Walk, id: string | undefined, fullPath: string): void {
-  if (id) {
-    walk.idOwners.set(id.toLowerCase(), fullPath);
+function rememberId(walk: Walk, key: string | undefined, owner: { id: string; path: string }): void {
+  if (key) {
+    walk.idOwners.set(key.toLowerCase(), owner);
   }
 }
 
 /**
- * `<id>:<interface name>` -> the path of the element the id belongs to (TIA writes the id of the element itself or of
- * one of its interfaces; GUIDs differ in case between writers), or the reference itself when it is unknown.
+ * `<id>:<interface name>` -> the id and path of the element the id belongs to (TIA writes the id of the element itself
+ * or of one of its interfaces; GUIDs differ in case between writers), or the reference itself when it is unknown.
  */
-const resolveRef = (ref: string, owners: Map<string, string>): string => owners.get(ref.split(':')[0].toLowerCase()) ?? ref;
+function resolveRef(ref: string, owners: Map<string, { id: string; path: string }>): { id: string; path: string } {
+  const owner = owners.get(ref.split(':')[0].toLowerCase());
+  return owner ? { id: owner.id.toLowerCase(), path: owner.path } : { id: ref, path: ref };
+}
 
 /**
  * Parses a CAEX / AutomationML export (as written by TIA Portal's hardware export). Returns `undefined` when the XML is
@@ -193,10 +207,10 @@ export function parseAml(text: string, culture: string): AmlModel | undefined {
     header: readHeader(root),
     elements: walk.elements,
     tags: walk.tags,
-    links: walk.links.map((l) => ({
-      name: l.name,
-      from: resolveRef(l.from, walk.idOwners),
-      to: resolveRef(l.to, walk.idOwners),
-    })),
+    links: walk.links.map((l) => {
+      const from = resolveRef(l.from, walk.idOwners);
+      const to = resolveRef(l.to, walk.idOwners);
+      return { name: l.name, from: from.path, to: to.path, fromId: from.id, toId: to.id };
+    }),
   };
 }

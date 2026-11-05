@@ -65,13 +65,17 @@
   }
 
   // the Tags / User constants tabs of a tag table: one panel is shown at a time
-  function selectTab(id) {
+  // `notify`: the other viewer of a comparison shows the same tab
+  function selectTab(id, notify) {
     document.querySelectorAll('button[data-tab]').forEach(function (button) {
       button.setAttribute('aria-selected', String(button.dataset.tab === id));
     });
     document.querySelectorAll('[data-panel]').forEach(function (panel) {
       panel.hidden = panel.dataset.panel !== id;
     });
+    if (notify && vscodeApi) {
+      vscodeApi.postMessage({ type: 'tab', id: id });
+    }
   }
 
   document.addEventListener('click', function (event) {
@@ -81,7 +85,7 @@
     }
     var tab = target.closest('button[data-tab]');
     if (tab) {
-      selectTab(tab.dataset.tab);
+      selectTab(tab.dataset.tab, true);
       return;
     }
     var fold = target.closest('.fold[data-from]');
@@ -340,20 +344,38 @@
     return targets;
   }
 
-  /** Scrolls to the next (or previous) difference, wrapping around at the ends like the text diff editor. */
+  /** The tabs of a tabbed view (tag table, hardware export) whose table holds a difference, in page order. */
+  function differenceTabs() {
+    return Array.prototype.slice.call(document.querySelectorAll('button[data-tab].tab-diff-add, button[data-tab].tab-diff-del'));
+  }
+
+  /**
+   * Scrolls to the next (or previous) difference, wrapping around at the ends like the text diff editor. In a tabbed
+   * view the difference after the last one of a tab is the first one of the next tab that holds one.
+   */
   function jumpToDifference(direction) {
     var targets = differenceTargets();
-    if (targets.length === 0) {
-      return;
-    }
     var y = contentTop();
     var found;
     if (direction === 'next') {
       found = targets.filter(function (t) { return t > y + 2; })[0];
-      found = found === undefined ? targets[0] : found;
     } else {
       var before = targets.filter(function (t) { return t < y - 2; });
-      found = before.length > 0 ? before[before.length - 1] : targets[targets.length - 1];
+      found = before.length > 0 ? before[before.length - 1] : undefined;
+    }
+    if (found === undefined) {
+      var tabs = differenceTabs();
+      var current = tabs.findIndex(function (button) { return button.getAttribute('aria-selected') === 'true'; });
+      if (tabs.length > 1 || (tabs.length === 1 && current === -1)) {
+        var step = direction === 'next' ? 1 : -1;
+        var index = current === -1 ? (direction === 'next' ? 0 : tabs.length - 1) : (current + step + tabs.length) % tabs.length;
+        selectTab(tabs[index].dataset.tab, true);
+        targets = differenceTargets();
+      }
+      if (targets.length === 0) {
+        return;
+      }
+      found = direction === 'next' ? targets[0] : targets[targets.length - 1];
     }
     var pane = contentScroller();
     if (pane) {
@@ -372,6 +394,13 @@
     if (message && message.type === 'fold') {
       if (typeof message.kind === 'string' && typeof message.id === 'string' && typeof message.collapsed === 'boolean') {
         applyFold(message.kind, message.id, message.collapsed);
+      }
+      return;
+    }
+    if (message && message.type === 'tab') {
+      // the other viewer of the comparison switched tab: follow without sending it back
+      if (typeof message.id === 'string') {
+        selectTab(message.id, false);
       }
       return;
     }

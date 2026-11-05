@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { diffAml } from '../../src/diff/amlDiff';
 import { parseAml, type AmlModel } from '../../src/parser/amlParser';
 import { renderAmlHtml } from '../../src/render/amlHtml';
 
@@ -83,13 +84,62 @@ describe('renderAmlHtml', () => {
 
   it('escapes everything that comes from the export', () => {
     const hostile = renderAmlHtml(
-      { ...model, fileName: '<img src=x onerror=alert(1)>', links: [{ name: '<script>alert(1)</script>', from: '"><b>', to: '' }] },
+      { ...model, fileName: '<img src=x onerror=alert(1)>', links: [{ name: '<script>alert(1)</script>', from: '"><b>', to: '', fromId: 'a', toId: 'b' }] },
       assets,
     );
     expect(hostile).not.toContain('<img src=x');
     expect(hostile).not.toContain('<script>alert');
     expect(hostile).not.toContain('"><b>');
     expect(hostile).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+  });
+
+  describe('in a comparison', () => {
+    const parse = (text: string): AmlModel => parseAml(text, 'en-US')!;
+    const sourceText = readFileSync(join(root, 'fixtures', 'sample.aml'), 'utf-8');
+    const base = parse(sourceText);
+    const render = (changed: string, side: 'old' | 'new'): string => {
+      const diffed = diffAml(base, parse(changed));
+      return renderAmlHtml(side === 'old' ? diffed.oldModel : diffed.newModel, assets);
+    };
+    /** The opening tag and cells of the first table row of any panel that mentions `text`. */
+    const rowWith = (page: string, text: string): string => page.split('<tr').find((r) => r.includes(`>${text}<`)) ?? '';
+
+    it('shows no mark when nothing differs', () => {
+      const page = render(sourceText, 'new');
+      expect(page).not.toMatch(/diff-(add|del)/);
+      expect(page).not.toContain('tab-diff');
+      expect(page).not.toContain('title="Changed');
+    });
+
+    it('colours only the cell that changed, green in the new version and red in the old one', () => {
+      const changed = sourceText.replace('192.168.0.1', '192.168.0.9');
+      const row = rowWith(render(changed, 'new'), 'IE1');
+      expect(row).not.toMatch(/^[^>]*class="diff/);
+      expect(row).toContain('<td class="diff-add">192.168.0.9</td>');
+      expect(rowWith(render(changed, 'old'), 'IE1')).toContain('<td class="diff-del">192.168.0.1</td>');
+    });
+
+    it('colours the whole row of an element only one version has', () => {
+      const added = sourceText.replace('<InternalElement ID="t-1"', '<InternalElement ID="d-3" Name="Drive_2"><SupportedRoleClass RefRoleClassPath="L/Device" /></InternalElement>\n<InternalElement ID="t-1"');
+      expect(rowWith(render(added, 'new'), 'Drive_2')).toMatch(/^ class="diff-add"/);
+      expect(render(added, 'old')).not.toContain('Drive_2');
+    });
+
+    it('marks the tabs that hold a difference, so a change on another tab is found', () => {
+      const changed = sourceText.replace('192.168.0.1', '192.168.0.9');
+      const page = render(changed, 'new');
+      expect(page).toMatch(/<button[^>]*class="tab tab-diff-add"[^>]*data-tab="network"/);
+      expect(page).not.toMatch(/<button[^>]*tab-diff[^>]*data-tab="tags"/);
+      // the old version's marks are red
+      expect(render(changed, 'old')).toMatch(/<button[^>]*class="tab tab-diff-del"[^>]*data-tab="network"/);
+    });
+
+    it('marks the name cell and says what changed when the changed value has no column', () => {
+      // BuiltIn is not a column of any table
+      const changed = sourceText.replace('<Attribute Name="BuiltIn" AttributeDataType="xs:boolean"><Value>false</Value></Attribute>', '<Attribute Name="BuiltIn" AttributeDataType="xs:boolean"><Value>true</Value></Attribute>');
+      const row = rowWith(render(changed, 'new'), 'PLC_1');
+      expect(row).toContain('<td class="diff-add" title="Changed: BuiltIn">PLC_1</td>');
+    });
   });
 
   it('only allows the script that carries its nonce', () => {

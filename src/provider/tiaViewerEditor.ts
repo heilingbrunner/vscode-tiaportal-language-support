@@ -8,6 +8,7 @@ import { parseAwl, parseScl } from '../parser/sclParser';
 import { withAddresses } from '../parser/stlAddresses';
 import { isTagTableSource, parseTagTable, type TagTable } from '../parser/tagTableParser';
 import { parseUdtModel } from '../parser/udtParser';
+import { diffAml } from '../diff/amlDiff';
 import { diffModels } from '../diff/modelDiff';
 import { diffTagTables } from '../diff/tagTableDiff';
 import type { BlockModel } from '../model/types';
@@ -227,6 +228,9 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
       forwarded = { type, kind, id, collapsed };
     } else if (type === 'scroll' && typeof target === 'string' && typeof left === 'number' && typeof top === 'number') {
       forwarded = { type, target, left, top };
+    } else if (type === 'tab' && typeof id === 'string') {
+      // a tab was selected: the other viewer of a tabbed view (tag table, hardware export) shows the same one
+      forwarded = { type, id };
     } else if (type === 'split' && (ratio === null || (typeof ratio === 'number' && ratio >= 0 && ratio <= 1))) {
       // the share of the height the header pane takes (null: its natural height), so both viewers keep the proportion
       forwarded = { type, ratio };
@@ -249,11 +253,16 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
     if ('message' in result) {
       return renderMessageHtml(result.message, assets);
     }
-    if ('aml' in result) {
-      // comparing two hardware exports is not supported yet: both sides show their own file without marks
-      return renderAmlHtml(result.aml, assets);
-    }
     const peer = this.pairs.get(uri);
+    if ('aml' in result) {
+      // an unreadable or different-kind counterpart only costs the marks: this export is still shown
+      const otherResult = peer ? await this.readModel(peer.other) : undefined;
+      if (!peer || !otherResult || !('aml' in otherResult)) {
+        return renderAmlHtml(result.aml, assets);
+      }
+      const diffed = peer.side === 'old' ? diffAml(result.aml, otherResult.aml) : diffAml(otherResult.aml, result.aml);
+      return renderAmlHtml(peer.side === 'old' ? diffed.oldModel : diffed.newModel, assets);
+    }
     if ('tagTable' in result) {
       // an unreadable or different-kind counterpart only costs the marks: this table is still shown
       const otherResult = peer ? await this.readModel(peer.other) : undefined;

@@ -9,22 +9,26 @@ export interface DiffedTagTables {
   newTable: TagTable;
 }
 
-interface Pair<T> {
+export interface Pair<T> {
   old: T[];
   new: T[];
 }
 
-/** Rows are matched by name (the n-th row of a name with the n-th of the same name); the fields that differ are listed. */
-function diffRows<T extends { name: string; diff?: RowDiff }>(
+/**
+ * Rows are matched by key, by default their name (the n-th row of a key with the n-th of the same key); the fields that
+ * differ are listed. A row without a partner is marked as a whole.
+ */
+export function diffRows<T extends { name: string; diff?: RowDiff }>(
   oldRows: T[],
   newRows: T[],
   fieldsOf: ReadonlyArray<readonly [string, (row: T) => unknown]>,
+  keyOf: (row: T) => string = (row) => row.name,
 ): Pair<T> {
   const candidates = new Map<string, number[]>();
-  newRows.forEach((row, j) => candidates.set(row.name, [...(candidates.get(row.name) ?? []), j]));
+  newRows.forEach((row, j) => candidates.set(keyOf(row), [...(candidates.get(keyOf(row)) ?? []), j]));
   const newOut: T[] = newRows.map((row) => ({ ...row, diff: { mark: NEW } }));
   const oldOut = oldRows.map((row) => {
-    const j = candidates.get(row.name)?.shift();
+    const j = candidates.get(keyOf(row))?.shift();
     const partner = j === undefined ? undefined : newRows[j];
     if (j === undefined || !partner) {
       return { ...row, diff: { mark: OLD } };

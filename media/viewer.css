@@ -238,6 +238,21 @@ table.interface td.start.default {
   cursor: pointer;
 }
 
+/* a tab whose table holds a difference of the comparison: a dot in the colour of the side's marks */
+.tab.tab-diff-add::after,
+.tab.tab-diff-del::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.tab.tab-diff-add::after { background: var(--tia-add); }
+.tab.tab-diff-del::after { background: var(--tia-del); }
+
 .tab:hover {
   color: var(--vscode-editor-foreground);
 }
