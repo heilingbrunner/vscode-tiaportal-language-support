@@ -1,11 +1,10 @@
 # Change Log
 
-## [Unreleased]
+## [0.0.11]
 
 - **Fail-safe data blocks (F-DB)**: an SD format `DATA_BLOCK` flagged `S7_Safety := "TRUE"` (and the Openness
   language name `F_DB`) is recognised as an F-DB. The data block view shows `Language: F-DB` in its header;
   standard data blocks show no language, as before.
-
 - **Absolute addresses like TIA Portal**: operands that name a PLC tag show the tag's address (`%M1.2`,
   `%MW10`), taken from the PLC tag table exports in the workspace. STL networks get an address column on the
   right (literals such as `L 0` are repeated there); in LAD / FBD networks the address stands in small text
@@ -13,14 +12,12 @@
   and tags without address show none; the view refreshes when a tag table changes.
 - **Block comment of STL / SCL sources**: the `////` lines in front of `BEGIN` are shown under the block title,
   collapsed to their first line like in TIA Portal.
-
 - **Fail-safe languages F-LAD and F-FBD**: Openness XML networks and blocks with the programming language
   `F_LAD` / `F_FBD`, and SD format blocks flagged `S7_Safety := "TRUE"`, are recognised as fail-safe. They are
   drawn like LAD / FBD (ladder with power rail, function block diagram without) and the block header and the
   network heading show `F-LAD` / `F-FBD`. SCL networks of a safety block stay SCL. The `s7dcl` and `fbd`
   grammars highlight the fail-safe instructions (`ESTOP1`, `FDBACK`, `MUTING`, `TWO_H_EN`, `SFDOOR`, `ACK_GL`,
   `ACK_OP`, `F_TON`, `F_TOF`, `F_TP`, `F_CTU`, `F_CTD`, `F_CTUD`).
-
 - **FBD networks drawn as function block diagrams**: networks with the programming language FBD (Openness XML
   and `.s7dcl`) no longer look like ladder logic. There is no power rail, operands sit directly at the box
   pins, `A` / `O` / `X` (`And` / `Or` / `Xor`) are boxes titled `&`, `>=1` and `=1`, and coils are assignment
@@ -29,6 +26,8 @@
 - **Syntax highlighting for FBD** (`syntaxes/fbd.tmLanguage.json`, scope `source.tia.fbd`, language `fbd` for
   `*.fbd`): the SD rung syntax with logic boxes, assignments, instruction boxes and box pins. The TIA Viewer
   uses it for FBD networks it cannot draw.
+- **`SCL` view improved**: the display of SCL networks in the TIA Viewer has been enhanced for better readability
+  and alignment with TIA Portal's representation.
 
 ## [0.0.10]
 

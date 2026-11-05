@@ -27,14 +27,14 @@ Syntax highlighting for exported Siemens TIA Portal (Step 7) files.
 
 ## Languages
 
-| Language                                 | Extensions     | Scope name       |
-| ---------------------------------------- | -------------- | ---------------- |
-| [SCL](#scl--structured-control-language) | `.scl`         | `source.tia.scl` |
-| [AWL / STL](#awl--stl--statement-list)   | `.awl`, `.stl` | `source.tia.awl` |
-| [DB](#db--data-block)                    | `.db`          | `source.tia.db`  |
-| [UDT](#udt--user-defined-type)           | `.udt`         | `source.tia.udt` |
-| [S7DCL](#s7dcl--sd-format)               | `.s7dcl`       | `source.tia.s7dcl` |
-| [FBD](#fbd--function-block-diagram-source) | `.fbd`       | `source.tia.fbd` |
+| Language                                   | Extensions     | Scope name         |
+| ------------------------------------------ | -------------- | ------------------ |
+| [SCL](#scl--structured-control-language)   | `.scl`         | `source.tia.scl`   |
+| [AWL / STL](#awl--stl--statement-list)     | `.awl`, `.stl` | `source.tia.awl`   |
+| [DB](#db--data-block)                      | `.db`          | `source.tia.db`    |
+| [UDT](#udt--user-defined-type)             | `.udt`         | `source.tia.udt`   |
+| [S7DCL](#s7dcl--sd-format)                 | `.s7dcl`       | `source.tia.s7dcl` |
+| [FBD](#fbd--function-block-diagram-source) | `.fbd`         | `source.tia.fbd`   |
 
 All grammars share the same scope suffix (`.tia`), so one theme rule such as `keyword.control.tia` applies to every language.
 
