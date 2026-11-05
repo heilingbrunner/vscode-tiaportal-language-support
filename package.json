@@ -10,7 +10,7 @@
         "url": "https://github.com/heilingbrunner/vscode-tiaportal-language-support.git"
     },
     "displayName": "TIA Portal Language Support",
-    "description": "Syntax highlighting for Siemens TIA Portal",
+    "description": "Syntax highlighting for exported Siemens TIA Portal files",
     "icon": "assets/vscode-tiaportal-syntaxes-logo.png",
     "version": "0.0.10",
     "engines": {
@@ -30,8 +30,10 @@
         "db",
         "udt",
         "scl",
+        "s7",
         "s7dcl",
         "s7res",
+        "step7",
         "fbd"
     ],
     "main": "./dist/extension.js",

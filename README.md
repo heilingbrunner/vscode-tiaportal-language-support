@@ -1,8 +1,13 @@
 # TIA Portal Language Support
 
-Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
+Syntax highlighting for exported Siemens TIA Portal (Step 7) files.
 
-![Screenshot of TIA Portal Language Support](https://github.com/heilingbrunner/vscode-tiaportal-language-support/blob/main/assets/screenshot-1.png?raw=true)
+
+![TIA viewer](https://github.com/heilingbrunner/vscode-tiaportal-language-support/blob/main/assets/screenshot-1.png?raw=true)
+
+![Search in project](https://github.com/heilingbrunner/vscode-tiaportal-language-support/blob/main/assets/screenshot-2.png?raw=true)
+
+![Git diff view](https://github.com/heilingbrunner/vscode-tiaportal-language-support/blob/main/assets/screenshot-3.png?raw=true)
 
 ## Features
 
@@ -18,7 +23,7 @@ Syntax highlighting for text sources exported from Siemens TIA Portal (STEP 7).
 - **Interface table** with expandable structs, arrays and UDT members.
 - **Collapsible networks** (click a network heading, or use the collapse/expand all button in the header, which also folds the interface sections) and a culture setting for titles and comments.
 - **git diff**: both versions side by side, red/green marks, synchronized scrolling.
-- **Search in project**: a TIA-style search over all exported sources of a folder (right-click a folder in the Explorer).
+- **Search in project**: a TIA-style search over all exported sources of a folder (right-click on software folder in the explorer).
 
 ## Languages
 
