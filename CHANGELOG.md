@@ -1,5 +1,14 @@
 # Change Log
 
+## [0.0.13]
+
+- **Red/green marks for *Compare Files* and *Compare Selected* without Git**: comparing two plain files with
+  VS Code's compare commands now marks the differences in the TIA Viewer, like *Open Changes* does for a Git
+  revision. The left file shows the old version (red), the right file the new one (green). The viewer recognises
+  the two files by the title of the diff tab (`A ↔ B`). If both files have the same name, the one that opened
+  first is taken as the left side; **TIA: Swap Compare Sides** exchanges old and new if red and green come out
+  reversed.
+
 ## [0.0.12]
 
 - **AutomationML (`.aml`) hardware exports in the TIA Viewer**: the AutomationML file that TIA Portal exports for
