@@ -17,6 +17,7 @@ import { renderBlockHtml, renderMessageHtml, type HtmlAssets } from '../render/h
 import { withHighlighting } from '../render/sclHighlighter';
 import { renderTagTableHtml } from '../render/tagTableHtml';
 import { gitSourceFile, type ComparePairs } from './comparePairs';
+import { pairByLabel } from './diffTabs';
 import type { HighlighterService } from './highlighterService';
 import { readS7res, s7dclUriOf, s7resUriOf } from './s7resFile';
 import type { TagIndex } from './tagIndex';
@@ -164,8 +165,45 @@ export class TiaViewerEditorProvider implements vscode.CustomReadonlyEditorProvi
       this.pairs.onDidChange(() => this.updateCompareContext()),
     );
     this.pairWithOpenRevision(document.uri);
+    this.pairFromDiffTabs(document.uri);
+    // the diff tab can appear after the panel resolved, and the other side may open later
+    subscriptions.push(vscode.window.tabGroups.onDidChangeTabs(() => this.pairFromDiffTabs(document.uri)));
     this.updateCompareContext();
     await render();
+  }
+
+  /**
+   * "Compare Files" / "Compare Selected" open a diff editor with this viewer on both sides. A panel only knows its own uri
+   * and VS Code gives a diff of custom editors no uris, just the label `A ↔ B`: match that label to the open viewers
+   * (left = `old`, right = `new`). Needs no Git.
+   */
+  private pairFromDiffTabs(uri: vscode.Uri): void {
+    if (this.pairs.get(uri) || uri.scheme === 'git') {
+      return;
+    }
+    const open = [...this.openPanels.keys()].map((key) => vscode.Uri.parse(key)).filter((u) => u.scheme !== 'git' && !this.pairs.get(u));
+    const nameOf = (u: vscode.Uri): string => u.path.slice(u.path.lastIndexOf('/') + 1);
+    for (const tab of vscode.window.tabGroups.all.flatMap((group) => group.tabs)) {
+      const sides = tab.isActive ? pairByLabel(tab.label, open, nameOf) : undefined;
+      if (sides && [sides.original, sides.modified].some((u) => u.toString() === uri.toString())) {
+        this.pairs.pair(sides.original, sides.modified);
+        return;
+      }
+    }
+  }
+
+  /** Exchanges old and new in the visible comparison, for when the left and right side were told apart wrongly. */
+  swapCompareSides(): void {
+    for (const key of this.openPanels.keys()) {
+      const uri = vscode.Uri.parse(key);
+      const peer = this.pairs.get(uri);
+      if (peer && uri.scheme !== 'git' && peer.other.scheme !== 'git') {
+        const [oldUri, newUri] = peer.side === 'old' ? [uri, peer.other] : [peer.other, uri];
+        this.pairs.release(uri);
+        this.pairs.pair(newUri, oldUri);
+        return;
+      }
+    }
   }
 
   /** The visible viewers that are one half of a comparison; the focused one comes first. */

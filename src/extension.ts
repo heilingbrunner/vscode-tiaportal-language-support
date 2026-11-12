@@ -25,6 +25,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerCustomEditorProvider(VIEW_TYPE, viewer, { supportsMultipleEditorsPerDocument: true }),
     vscode.commands.registerCommand('tia.nextDifference', () => viewer.goToDifference('next')),
     vscode.commands.registerCommand('tia.previousDifference', () => viewer.goToDifference('previous')),
+    vscode.commands.registerCommand('tia.swapCompareSides', () => viewer.swapCompareSides()),
     vscode.commands.registerCommand('tia.openViewer', async (resource?: vscode.Uri) => {
       const uri = resource ?? vscode.window.activeTextEditor?.document.uri;
       if (!uri) {

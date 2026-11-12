@@ -111,6 +111,10 @@
                 "icon": "$(arrow-up)"
             },
             {
+                "command": "tia.swapCompareSides",
+                "title": "TIA: Swap Compare Sides"
+            },
+            {
                 "command": "tia.searchInFolder",
                 "title": "TIA: Search in Folder…"
             },
@@ -131,6 +135,10 @@
                 },
                 {
                     "command": "tia.previousDifference",
+                    "when": "tia.inCompare"
+                },
+                {
+                    "command": "tia.swapCompareSides",
                     "when": "tia.inCompare"
                 }
             ],
